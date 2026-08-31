@@ -1,0 +1,26 @@
+# Optional upgrades. The system runs fully without every one of these -- each
+# has a fallback the tests cover, and /meta/health reports which fallback is
+# active. Install when you want the stack the brief names.
+#
+#     pip install -r backend/requirements-extras.txt
+
+# Vector retrieval for the IPDM knowledge base.
+# Fallback: the built-in BM25 index in services/knowledge_base.py.
+# Note: pulls an embedding model on first use (~80 MB) -- watch the C: drive.
+chromadb>=0.6,<2.0
+
+# Advisory pipeline orchestration.
+# Fallback: the same four nodes run sequentially in services/advisory.py.
+langgraph>=0.2.60,<1.0
+langchain-core>=0.3.28,<1.0
+
+# Secondary risk layer (ml/train_risk_xgb.py).
+# Fallback: inactive -- the agronomic models carry the forecast alone.
+xgboost>=2.1,<4.0
+scikit-learn>=1.6,<2.0
+shap>=0.46,<1.0
+
+# LLM translation of free-text knowledge-base excerpts.
+# Fallback: excerpts stay in English; the message catalog still gives full
+# Marathi and Hindi advisories with no key.
+anthropic>=0.40

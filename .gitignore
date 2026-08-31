@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Env / secrets
+.env
+.env.local
+
+# Data & models (never commit datasets or checkpoints)
+datasets/
+runs/
+*.pt
+*.onnx
+!ml/weights/.gitkeep
+backend/app/data/uploads/
+backend/app/data/chroma/
+*.db
+*.sqlite3
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Test scratch
+backend/.pytest-tmp/

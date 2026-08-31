@@ -1,0 +1,20 @@
+# YOLO dataset config -- POTATO ONLY, 3 CLASSES.
+#
+# The class order here is authoritative and MUST stay in lockstep with
+# backend/app/services/taxonomy.py:CLASS_NAMES. The serving layer maps a model
+# output index straight to these names; swapping two lines here silently
+# mislabels every prediction in production.
+#
+# `path` is filled in by ml/prepare_dataset.py, or overridden on the command
+# line when training on Kaggle:
+#   yolo detect train data=ml/data.yaml path=/kaggle/working/potato_yolo
+
+path: ../datasets/potato_yolo
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: potato_early_blight
+  1: potato_late_blight
+  2: potato_healthy

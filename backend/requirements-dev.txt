@@ -1,0 +1,9 @@
+# Test dependencies.
+#   pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+#   pytest backend/tests -q
+
+pytest>=8.3
+
+# Enables backend/tests/test_onnx_integration.py, which decodes a genuine
+# onnxruntime session instead of a stub. Skipped cleanly if absent.
+onnx>=1.17

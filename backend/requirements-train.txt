@@ -1,0 +1,12 @@
+# Training and local .pt serving only. NOT needed to run the API.
+#
+# The brief pins a 16 GB / low-disk machine, so do not install this locally --
+# training belongs on Kaggle. The serving layer uses ONNX Runtime and never
+# imports torch.
+#
+# Install this only if you want to:
+#   * serve a raw best.pt instead of the ONNX export, or
+#   * run ml/export_onnx.py, ml/evaluate.py or ml/tune_thresholds.py locally.
+
+ultralytics>=8.3
+torch>=2.5

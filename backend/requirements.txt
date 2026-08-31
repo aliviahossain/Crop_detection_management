@@ -1,0 +1,32 @@
+# Core serving stack. This is the only file the README asks you to install,
+# and it must resolve cleanly on Python 3.10-3.13.
+#
+# Pins are floors, not exact versions. Exact pins broke on Python 3.13 -- e.g.
+# onnxruntime 1.20.1 ships no cp313 wheel, so `pip install` failed on the dev
+# machine this project targets. Floors let pip pick a build that exists for
+# your interpreter while still excluding versions with APIs we do not use.
+#
+# Everything else the system can use -- ChromaDB, LangGraph, XGBoost, SHAP --
+# lives in requirements-extras.txt because the code has a documented, tested
+# fallback for each. A failure there must not block the core install.
+
+# --- API ---
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.34,<1.0
+python-multipart>=0.0.20
+pydantic>=2.10,<3.0
+pydantic-settings>=2.7,<3.0
+
+# --- Persistence ---
+SQLAlchemy>=2.0.36,<3.0
+
+# --- Knowledge base parsing ---
+PyYAML>=6.0
+
+# --- Inference (CPU) ---
+onnxruntime>=1.20
+numpy>=2.0
+Pillow>=11.0
+
+# --- Weather / HTTP ---
+httpx>=0.28,<1.0
