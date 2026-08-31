@@ -112,6 +112,36 @@ hit that cap. A model trained on a few hundred surveillance rows must not be abl
 override a fired Smith Period — a 70-year-old validated criterion outranks a thin fit.
 The cap makes that a property of the code rather than a hope.
 
+## Why the live scanner does not trust a single frame
+
+A real-time scanner is the most dangerous surface in this system, because it produces
+answers continuously and invites acting on whichever one is on screen. Three properties
+make it safe enough to ship:
+
+**Quality gating before inference, not after.** Frames are scored for blur and exposure
+first, and unusable ones never reach the model. Running inference on a motion-blurred
+frame and then reporting the result is how you get a confident wrong answer — the model
+has no way to signal "I could not see that properly", so the caller has to.
+
+**Consensus over a window, not per-frame output.** `stabilizer.js` holds a rolling window
+of good frames and offers a verdict only when one class holds a supermajority *and* mean
+confidence clears the bar. This directly prevents the failure where one anomalous frame
+flashes a disease verdict at a farmer standing over a healthy plant. Poor-quality frames
+are recorded for the hint but never dilute or corrupt the consensus.
+
+**Nothing persists without an explicit human action.** Scanning writes nothing — no case,
+no advisory, no image on disk (`/detect/frame` deletes the frame it just read). Only
+Accept creates a record, and it does so through the *same* `/detect` pipeline as a photo
+upload, so an accepted scan gets the identical triage and safety gating. There is no
+second, weaker path into the case table.
+
+**Two decoders, one behaviour.** The browser decodes YOLO output in JavaScript while the
+server does it in Python. That duplication is a liability, so `yoloDecode.test.js` mirrors
+`test_detector.py` case for case with the same numeric expectations, and one test runs a
+real ONNX model through onnxruntime-web to confirm both produce the same box. The Python
+decoder has already had two genuine bugs (a squeeze that collapsed the anchor axis, and an
+ambiguous output orientation); the JavaScript one gets the same scrutiny.
+
 ## Degraded versus by-design
 
 `GET /meta/health` returns two separate lists and the frontend renders them differently:

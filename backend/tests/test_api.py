@@ -119,6 +119,57 @@ class TestDetect:
         assert resp.status_code == 400
 
 
+class TestLiveScanner:
+    """Endpoints backing the real-time camera scanner."""
+
+    def test_frame_inference_creates_no_case(self, client, sample_image):
+        """A live camera sends several frames a second. If each one created a
+        case, a minute of scanning would produce thousands of junk records."""
+        before = client.get("/dashboard/summary", params={"days": 1}).json()["cases"]["total"]
+        with sample_image.open("rb") as fh:
+            resp = client.post("/detect/frame", files={"image": ("f.jpg", fh, "image/jpeg")})
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert "top_class" in body and "detections" in body
+        # No advisory, no triage, no follow-up on this path.
+        assert "advisory" not in body
+        after = client.get("/dashboard/summary", params={"days": 1}).json()["cases"]["total"]
+        assert after == before
+
+    def test_frame_does_not_retain_the_image(self, client, sample_image):
+        """Frames are throughput, not evidence — keeping them fills the disk."""
+        from app.config import settings
+
+        before = len(list(settings.upload_dir.rglob("*.jpg")))
+        for _ in range(3):
+            with sample_image.open("rb") as fh:
+                client.post("/detect/frame", files={"image": ("f.jpg", fh, "image/jpeg")})
+        assert len(list(settings.upload_dir.rglob("*.jpg"))) == before
+
+    def test_frame_rejects_a_non_image(self, client, tmp_path):
+        bad = tmp_path / "x.txt"
+        bad.write_text("nope")
+        with bad.open("rb") as fh:
+            assert client.post(
+                "/detect/frame", files={"image": ("x.txt", fh, "text/plain")}
+            ).status_code == 415
+
+    def test_thresholds_endpoint_matches_the_server_decoder(self, client):
+        """The in-browser decoder reads these. If they drift from what the
+        server applies, the same leaf gets two different verdicts."""
+        data = client.get("/detect/thresholds").json()
+        status = client.get("/detect/status").json()
+        assert data["classes"] == status["classes"]
+        assert data["per_class"] == status["conf_thresholds"]
+        assert data["default"] == status["conf_threshold_default"]
+        assert 0 < data["iou_threshold"] < 1
+
+    def test_model_download_404s_with_guidance_when_untrained(self, client):
+        resp = client.get("/detect/model")
+        assert resp.status_code == 404
+        assert "ml/weights" in resp.json()["detail"]
+
+
 class TestRisk:
     def test_forecast_without_an_image(self, client):
         resp = client.post(

@@ -8,7 +8,7 @@ flags this explicitly: evaluators check solution-to-PS alignment.
 
 | # | Required by the PS | Implemented in | Demonstrate with | Status |
 |---|---|---|---|---|
-| 1 | **Image-based symptom identification** | `services/detector.py` (ONNX Runtime, letterbox + per-class NMS), `routers/detect.py` | `POST /detect` — returns class, confidence and bounding boxes | Serving layer complete and tested; needs weights from the Kaggle run |
+| 1 | **Image-based symptom identification** | `services/detector.py` (ONNX Runtime, letterbox + per-class NMS), `routers/detect.py`, plus in-browser inference via `frontend/src/lib/liveDetector.js` | `POST /detect` (photo) · `POST /detect/frame` (live) · the **Live scan** page | Serving layer complete and tested, including real-time on-device scanning; needs weights from the Kaggle run |
 | 2 | **Pest-trap or sensor inputs** | `models.SensorReading`, `routers/sensors.py`, consumed by `risk_engine._trap_pressure` | `POST /sensors`, `POST /sensors/batch`, `GET /sensors/summary` | Complete; trap counts feed tuber-moth risk and appear on the map |
 | 3 | **Weather-based risk forecasting** | `services/risk_models.py` (Smith, Beaumont, TOMCAST, degree-days), `services/risk_engine.py`, `services/weather.py` | `POST /risk`, `GET /risk/models`, `GET /risk/weather` | Complete; runs with no training data by design |
 | 4 | **Geospatial hotspot mapping** | `services/geo.py`, `routers/hotspots.py`, `frontend/src/pages/MapPage.jsx` | `GET /hotspots`, `GET /hotspots/geojson` | Complete; GeoJSON output also opens in QGIS |

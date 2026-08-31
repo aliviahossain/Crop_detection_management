@@ -216,3 +216,56 @@ details pre {
 
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; align-items: center; }
 .legend .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+
+/* ---------- live scanner ---------- */
+.scan-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #10150f;
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.scan-video,
+.scan-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.scan-overlay { pointer-events: none; }
+
+.scan-placeholder {
+  position: relative;
+  color: #cfd8d0;
+  text-align: center;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Status sits over the video, so it must stay readable on any footage. */
+.scan-status {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  max-width: 92%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.scan-status.low { background: rgba(63, 143, 95, 0.92); }
+.scan-status.medium { background: rgba(201, 138, 18, 0.92); }
+.scan-status.high { background: rgba(192, 57, 43, 0.94); }

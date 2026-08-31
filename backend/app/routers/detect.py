@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from PIL import Image, UnidentifiedImageError
 from sqlalchemy.orm import Session
 
@@ -153,3 +154,89 @@ async def detect(
 @router.get("/status", summary="Detection model status")
 def status() -> dict:
     return detector.status()
+
+
+@router.post("/frame", summary="Classify a single live-camera frame (no case created)")
+async def detect_frame(
+    image: UploadFile = File(..., description="One frame from the live scanner"),
+) -> dict:
+    """Stateless, lightweight inference for the real-time scanner.
+
+    Deliberately *not* `/detect`: a live camera produces several frames a second,
+    and each one must not create a case, run the RAG advisory, or touch the
+    database. The farmer decides when a frame becomes a case by pressing Accept,
+    which then goes through the full `/detect` pipeline.
+
+    This is the fallback path. The scanner prefers to run the ONNX model in the
+    browser (see `GET /detect/model`), which needs no network at all -- the right
+    behaviour on a field connection.
+    """
+    path = _save_upload(image)
+    try:
+        result = detector.predict(path)
+        return {
+            "model_available": result.model_available,
+            "model_version": result.model_version,
+            "top_class": result.top_class,
+            "top_display": taxonomy.display_name(result.top_class)
+            if result.top_class
+            else None,
+            "top_confidence": result.top_confidence,
+            "detections": [
+                {
+                    "class_key": d.class_key,
+                    "confidence": d.confidence,
+                    "bbox_norm": d.bbox_norm,
+                }
+                for d in result.detections
+            ],
+            "note": result.note,
+        }
+    except Exception as exc:
+        log.exception("Frame inference failed")
+        raise HTTPException(status_code=500, detail=f"Inference failed: {exc}") from exc
+    finally:
+        # Live frames are throughput, not evidence. Keeping them would fill the
+        # disk with thousands of near-identical images within minutes.
+        path.unlink(missing_ok=True)
+
+
+@router.get("/model", summary="Download the ONNX model for in-browser inference")
+def model_file():
+    """Serves the exported model so the scanner can run entirely on-device.
+
+    This is what makes the offline story real rather than aspirational: once the
+    browser has cached this file, scanning works with no connectivity at all.
+    """
+    path = Path(settings.yolo_onnx_path)
+    if not path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "No ONNX model installed. Train on Kaggle (ml/notebooks/) and place "
+                "best.onnx in ml/weights/. The live scanner falls back to server-side "
+                "inference, and to plain photo capture, until then."
+            ),
+        )
+    return FileResponse(
+        path,
+        media_type="application/octet-stream",
+        filename="best.onnx",
+        # The model changes only on redeploy; let the browser keep it.
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+@router.get("/thresholds", summary="Per-class confidence thresholds for the browser model")
+def thresholds() -> dict:
+    """The in-browser decoder must apply the same tuned thresholds as the server,
+    or the same frame would be judged differently on each path."""
+    status_ = detector.status()
+    return {
+        "classes": status_["classes"],
+        "per_class": status_["conf_thresholds"],
+        "default": status_["conf_threshold_default"],
+        "low_confidence_threshold": status_["low_confidence_threshold"],
+        "iou_threshold": settings.detection_iou_threshold,
+        "source": status_["threshold_source"].get("source"),
+    }

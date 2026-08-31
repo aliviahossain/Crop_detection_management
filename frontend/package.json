@@ -4,12 +4,18 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "copy-ort": "node scripts/copy-ort-runtime.mjs",
+    "predev": "npm run copy-ort",
     "dev": "vite",
+    "prebuild": "npm run copy-ort",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "leaflet": "^1.9.4",
+    "onnxruntime-web": "^1.29.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-leaflet": "^4.2.1",
@@ -18,6 +24,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.0.7"
+    "vite": "^6.0.7",
+    "vitest": "^4.1.11"
   }
 }

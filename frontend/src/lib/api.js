@@ -30,6 +30,10 @@ export const api = {
 
   detect: (formData) => request('/detect', { method: 'POST', body: formData }),
   detectStatus: () => request('/detect/status'),
+  // Live scanner: stateless per-frame inference, no case and no DB write.
+  detectFrame: (formData) => request('/detect/frame', { method: 'POST', body: formData }),
+  detectThresholds: () => request('/detect/thresholds'),
+  modelUrl: () => `${BASE}/detect/model`,
 
   risk: (payload) => request('/risk', json(payload)),
   riskModels: () => request('/risk/models'),

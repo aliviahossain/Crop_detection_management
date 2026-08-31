@@ -3,6 +3,7 @@ import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import { LangContext, LANGUAGES, useLang, useT } from './lib/i18n.js'
 import { api } from './lib/api.js'
 import FarmerPage from './pages/FarmerPage.jsx'
+import ScanPage from './pages/ScanPage.jsx'
 import RiskPage from './pages/RiskPage.jsx'
 import MapPage from './pages/MapPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
@@ -12,6 +13,7 @@ function Nav() {
   const t = useT()
   const { lang, setLang } = useLang()
   const links = [
+    ['/scan', 'nav.scan'],
     ['/check', 'nav.check'],
     ['/risk', 'nav.risk'],
     ['/map', 'nav.map'],
@@ -118,6 +120,7 @@ export default function App() {
         <HealthBanner />
         <Routes>
           <Route path="/" element={<Navigate to="/check" replace />} />
+          <Route path="/scan" element={<ScanPage />} />
           <Route path="/check" element={<FarmerPage />} />
           <Route path="/risk" element={<RiskPage />} />
           <Route path="/map" element={<MapPage />} />

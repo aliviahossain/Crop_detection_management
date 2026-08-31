@@ -3,8 +3,9 @@
 **SIH 2026 · PS26131 — Crop Disease & Pest Detection System**
 Government of Maharashtra (Maharashtra State Innovation Society)
 
-A farmer- and extension-worker-facing crop health system for **potato**: photo-based
-disease detection, weather-driven risk forecasting *before* symptoms appear, IPDM
+A farmer- and extension-worker-facing crop health system for **potato**: real-time camera
+scanning that runs on-device, photo-based disease detection, weather-driven risk
+forecasting *before* symptoms appear, IPDM
 advisories in Marathi/Hindi/Bengali/English, geospatial hotspot mapping, an expert validation
 queue that feeds retraining, and a dashboard for agriculture officials.
 
@@ -79,7 +80,10 @@ Tests:
 
 ```bash
 pip install -r backend/requirements-dev.txt
-pytest backend/tests -q      # 96 tests, no network, no trained model needed
+pytest backend/tests -q      # 101 tests, no network, no trained model needed
+
+cd frontend && npm test      # 39 tests: browser decoder parity, quality gate,
+                             # verdict stabilizer, real onnxruntime-web run
 ```
 
 Optional extras. Each has a tested fallback, so none is required — but installing them
@@ -118,6 +122,8 @@ synthetic backfill that the response reports explicitly.
 │  FastAPI backend             │
 ├──────────────────────────────┤
 │ POST /detect     │ YOLOv8s via ONNX Runtime (CPU) → class + confidence + bbox
+│ POST /detect/frame │ Stateless per-frame inference for the live scanner
+│ GET  /detect/model │ Serves the ONNX so the browser can infer on-device
 │ POST /risk       │ Smith / Beaumont / TOMCAST / degree-days + OpenWeatherMap
 │ POST /advisory   │ LangGraph pipeline over a human-reviewed IPDM knowledge base
 │ GET  /hotspots   │ Geo-grid aggregation, confirmed cases weighted above unverified
@@ -212,7 +218,36 @@ offline on-device build would ship. The export is shape-verified, the decoder is
 against a real onnxruntime session, and `ml/benchmark_inference.py` measures the latency
 rather than asserting it.
 
-### 6. Detection thresholds encode an asymmetric cost
+### 6. The live scanner runs on-device, and refuses to guess
+
+Pointing a phone at a crop is the interaction a farmer actually wants, but a naive version
+of it is dangerous: per-frame predictions flicker, and a pesticide decision must not rest
+on 33 milliseconds of video. So the scanner has three gates:
+
+1. **Quality gate.** Every frame is scored for blur (variance of Laplacian) and exposure
+   before the model sees it. Blurred and badly lit frames are discarded and the farmer is
+   told what to fix — "hold steady", "move into better light" — rather than being given a
+   confident answer computed from mush.
+2. **Temporal consensus.** No verdict appears until the model agrees with itself across a
+   rolling window of good frames (default: 6 of 10 frames, ≥55% mean confidence). Five
+   healthy frames plus one lucky late-blight frame yields *healthy*, not a scare.
+3. **Explicit accept.** Nothing is stored until the farmer presses Accept, which sends
+   that exact frame through the full `/detect` pipeline — same advisory, same triage, same
+   follow-up as a photo upload. Discarded scans leave no record at all.
+
+Inference runs **in the browser** via onnxruntime-web: no network per frame, no server
+cost, and scanning keeps working on a bad field connection or none at all. The WASM
+runtime is served from our own origin rather than a CDN, precisely so the offline claim is
+real. If WASM cannot start, or no model is installed, it falls back to `/detect/frame` and
+then to plain photo capture — and says which mode it is in.
+
+The browser decoder is a deliberate mirror of `services/detector.py`, and
+`frontend/src/lib/__tests__/` asserts they agree on the same numbers — including one test
+that runs a real ONNX model through onnxruntime-web and checks it decodes the identical
+box the Python server does. Two implementations of the same maths is a bug waiting to
+happen; the tests are what keep them honest.
+
+### 7. Detection thresholds encode an asymmetric cost
 
 A single `conf=0.25` assumes a false positive and a false negative cost the same. Missing
 late blight can cost the field; a false positive costs a spray and is *already* caught by
@@ -285,14 +320,17 @@ backend/app/
                  knowledge_base · advisory · triage · translate · pipeline · geo · taxonomy
   data/kb/       IPDM knowledge base (human-reviewed markdown — edit this, not the code)
   models.py      cases · follow-ups · sensor readings · training samples · weather cache
-backend/tests/   96 tests: agronomic models, triage rules, ONNX decoding (fake and
+backend/tests/   101 tests: agronomic models, triage rules, ONNX decoding (fake and
                  real onnxruntime session), per-class thresholds, translation
-                 integrity across 4 languages, full API
+                 integrity across 4 languages, live-scanner endpoints, full API
 ml/              dataset prep · training · evaluation · threshold tuning · benchmarking
                  ONNX export · feedback export · risk XGBoost
 ml/DATASETS.md   dataset comparison, imbalance analysis, provenance
 ml/notebooks/    Kaggle training notebook (potato, 3 classes, 100 epochs)
-frontend/src/    React app — farmer flow, risk page, Leaflet map, dashboard, review queue
+frontend/src/    React app — live scanner, farmer flow, risk page, Leaflet map,
+                 dashboard, review queue
+frontend/src/lib/ yoloDecode (browser mirror of the server decoder) · liveDetector
+                 (onnxruntime-web) · frameQuality · stabilizer · i18n
 scripts/         demo data seeding · risk-dataset export for the XGBoost layer
 docs/            architecture notes and PS traceability matrix
 ```
