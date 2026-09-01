@@ -12,6 +12,43 @@ that lets the system say *"do not spray"*, which is the core of the problem
 statement's "more targeted pesticide use". A dataset without a potato-specific
 healthy class cannot supply it.
 
+## The decision: PlantVillage potato + PlantDoc potato
+
+**Both, merged.** Roughly **2,400 images**: ~2,150 from PlantVillage and ~250
+potato images from PlantDoc. Neither alone is sufficient, for opposite reasons.
+
+PlantVillage supplies the volume but every image is one leaf on a uniform grey
+background. A model trained on it alone scores near-perfectly on its own test
+split and then degrades on a phone photo of a real field, because what it
+actually learned is "leaf on grey". PlantDoc supplies a few hundred genuine
+field-condition images with real bounding boxes — cluttered backgrounds, mixed
+lighting, leaves at angles — which is what the farmer's camera will send.
+
+`prepare_dataset.py` takes both and tags each image `pv_` (lab) or `ann_`
+(field), then writes separate `val_lab.txt` and `val_field.txt` lists so
+`evaluate.py` reports the two mAPs separately. **That separation is the point.**
+A combined number is dominated by the easy lab images and will flatter the model;
+the field number is the one that predicts behaviour in a field.
+
+### What the merge does and does not fix
+
+| | Early blight | Late blight | Healthy |
+|---|---|---|---|
+| PlantVillage | ~1,000 | ~1,000 | **152** |
+| PlantDoc | ~117 | ~110 | **~24** |
+| **Combined** | ~1,117 | ~1,110 | **~176** |
+
+The imbalance is essentially unchanged at about **6.4:1**. PlantDoc's healthy
+potato class (it calls it simply "Potato leaf") is tiny, so merging adds field
+realism to the two disease classes without meaningfully helping the class that
+needs it most. `--cap-train 400 --oversample-min` equalises the *training*
+split, but healthy then ends up roughly two-thirds duplicated images — the run
+prints that percentage rather than hiding it behind the parity claim.
+
+**The honest position: healthy is the weak class, and no flag fixes that.** The
+real remedy is a few hundred more healthy potato photographs, which the expert
+review queue is designed to accumulate (`ml/export_feedback.py`).
+
 ## Options compared
 
 | | **PlantVillage** (default) | **PlantDoc** | **Roboflow "Plant Diseases Detection and Classification"** |
@@ -21,7 +58,7 @@ healthy class cannot supply it.
 | Conditions | Lab: one leaf, uniform grey background | **Real field conditions** | Mixed |
 | Task type | Classification (no boxes) | Detection (real boxes) | Detection (real boxes) |
 | Provenance | ICAR/Penn State, widely cited, peer-reviewed | Published paper (Singh et al., CoDS-COMAD 2020) | Unverified 2023 student graduation project |
-| Role here | **Volume base** | **Realism** — merge this in | Reference for pipeline structure only |
+| Role here | **Volume base** | **Realism — merged in by default** | Reference for pipeline structure only |
 
 ### Why PlantVillage is the base and not the Roboflow set
 
@@ -120,7 +157,7 @@ every class is actually measurable.
 # Best available: lab volume + field realism
 python ml/prepare_dataset.py \
     --plantvillage /kaggle/input/plantvillage-dataset/color \
-    --annotated    /kaggle/input/<your-roboflow-or-plantdoc-export> \
+    --annotated    /kaggle/input/plantdoc-potato \
     --out          /kaggle/working/potato_yolo \
     --cap-train 400 --oversample-min
 ```

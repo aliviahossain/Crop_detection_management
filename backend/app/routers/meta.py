@@ -48,6 +48,15 @@ def health() -> dict:
                 "remedy": "Train on Kaggle (ml/notebooks/) and place best.onnx in ml/weights/.",
             }
         )
+    if det.get("class_mismatch"):
+        degraded.append(
+            {
+                "code": "detector_class_mismatch",
+                "summary": "The loaded model's class order does not match the app's taxonomy, "
+                "so predictions would be mislabelled. Detections are unsafe to trust.",
+                "remedy": det["class_mismatch"],
+            }
+        )
     if not settings.openweather_api_key:
         degraded.append(
             {

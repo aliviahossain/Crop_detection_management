@@ -50,6 +50,12 @@ IOU_MATCH = 0.5
 # advisory with spurious detections the farmer has to sort out.
 MIN_THRESHOLD = 0.05
 MAX_THRESHOLD = 0.90
+# Precision/recall move sharply at low confidence and flatten out well before
+# 0.9. A uniform grid across 0.05-0.90 spent half its steps in a region where
+# recall is already near zero, while under-resolving the part that decides the
+# answer. Fine steps below the knee, coarse above it.
+FINE_MAX = 0.60
+FINE_SHARE = 0.8
 
 
 def iou(a, b) -> float:
@@ -66,14 +72,24 @@ def iou(a, b) -> float:
     return inter / (area_a + area_b - inter + 1e-9)
 
 
-def label_for(img_path: Path) -> Path:
-    """`.../images/<split>/x.jpg` -> `.../labels/<split>/x.txt` (YOLO layout)."""
+def label_for(img_path: Path) -> Path | None:
+    """`.../images/<split>/x.jpg` -> `.../labels/<split>/x.txt` (YOLO layout).
+
+    Returns None when no `images` path component exists, rather than handing
+    back the unchanged image path with a .txt suffix. The old version fell
+    through silently: `load_ground_truth` then saw no file, treated the image as
+    having zero ground-truth boxes, and every prediction on it counted as a
+    false positive -- quietly biasing the whole sweep toward higher thresholds.
+    A tuning run that reports nothing wrong while measuring nothing real is
+    worse than one that fails.
+    """
     parts = list(img_path.parts)
     for i in range(len(parts) - 1, -1, -1):
         if parts[i] == "images":
             parts[i] = "labels"
-            break
-    return Path(*parts).with_suffix(".txt")
+            return Path(*parts).with_suffix(".txt")
+    sibling = img_path.parent.parent / "labels" / img_path.parent.name / f"{img_path.stem}.txt"
+    return sibling if sibling.exists() else None
 
 
 def load_ground_truth(label_path: Path, width: int, height: int) -> list[tuple[int, list[float]]]:
@@ -147,21 +163,69 @@ def main() -> int:
     # Predict once at a very low threshold, then sweep offline. One inference
     # pass instead of one per candidate threshold.
     records: list[dict] = []
+    unreadable: list[str] = []
+    no_label: list[str] = []
     for img_path in images:
-        with Image.open(img_path) as im:
-            width, height = im.size
-        gt = load_ground_truth(label_for(img_path), width, height)
+        try:
+            with Image.open(img_path) as im:
+                width, height = im.size
+        except (OSError, ValueError) as exc:
+            # One truncated file used to abort the entire sweep with no partial
+            # results after a full inference pass had already been paid for.
+            unreadable.append(f"{img_path.name}: {exc}")
+            continue
 
-        res = model.predict(source=str(img_path), conf=0.001, iou=0.45, verbose=False)[0]
+        label_path = label_for(img_path)
+        if label_path is None or not label_path.exists():
+            no_label.append(img_path.name)
+            continue
+        gt = load_ground_truth(label_path, width, height)
+
+        try:
+            res = model.predict(source=str(img_path), conf=0.001, iou=0.45, verbose=False)[0]
+        except Exception as exc:
+            unreadable.append(f"{img_path.name}: inference failed ({exc})")
+            continue
         preds = [
             (int(b.cls.item()), float(b.conf.item()), [float(v) for v in b.xyxy[0].tolist()])
             for b in res.boxes
         ]
         records.append({"gt": gt, "preds": preds})
 
+    if unreadable:
+        print(f"  ! skipped {len(unreadable)} unreadable image(s):", file=sys.stderr)
+        for line in unreadable[:5]:
+            print(f"      {line}", file=sys.stderr)
+    if no_label:
+        print(
+            f"  ! {len(no_label)} image(s) had no ground-truth label and were EXCLUDED. "
+            "Counting them as empty would bias the sweep.",
+            file=sys.stderr,
+        )
+    if not records:
+        print(
+            "No usable validation images with ground truth. Cannot tune thresholds.",
+            file=sys.stderr,
+        )
+        return 1
+    # Losing most of the val set invalidates the tuning, so refuse rather than
+    # emit thresholds fitted to a handful of images.
+    usable_share = len(records) / len(images)
+    if usable_share < 0.5:
+        print(
+            f"Only {len(records)}/{len(images)} ({usable_share:.0%}) validation images were "
+            "usable. Refusing to tune thresholds on that - fix the dataset layout first.",
+            file=sys.stderr,
+        )
+        return 1
+    print(f"Using {len(records)} of {len(images)} validation images.")
+
+    n_fine = max(2, int(args.steps * FINE_SHARE))
+    n_coarse = max(1, args.steps - n_fine)
     grid = [
-        MIN_THRESHOLD + i * (MAX_THRESHOLD - MIN_THRESHOLD) / (args.steps - 1)
-        for i in range(args.steps)
+        MIN_THRESHOLD + i * (FINE_MAX - MIN_THRESHOLD) / (n_fine - 1) for i in range(n_fine)
+    ] + [
+        FINE_MAX + (i + 1) * (MAX_THRESHOLD - FINE_MAX) / n_coarse for i in range(n_coarse)
     ]
 
     results: dict[str, dict] = {}
@@ -218,7 +282,13 @@ def main() -> int:
         )
         results[class_name] = {**best, "beta": beta, "objective": objective, "curve": curve}
 
-    default = round(min(r["threshold"] for r in results.values()), 3)
+    # The fallback for a class with no tuned entry must be the STRICTEST tuned
+    # threshold, not the loosest. min() picked a disease-class threshold, which
+    # is deliberately permissive because the triage layer catches its false
+    # positives -- applying that to an untuned class would flood advisories with
+    # detections nothing downstream is expecting. An unknown class has no
+    # evidence behind it, so it should clear the highest bar we have measured.
+    default = round(max(r["threshold"] for r in results.values()), 3)
     payload = {
         "tuned_on": str(args.data),
         "tuned_at": date.today().isoformat(),
@@ -233,6 +303,10 @@ def main() -> int:
             "exactly the delayed-treatment failure the problem statement describes."
         ),
         "default": default,
+        "default_rationale": (
+            "Strictest tuned threshold. Applies only to a class with no tuned entry, where "
+            "there is no evidence to justify anything more permissive."
+        ),
         "per_class": {name: r["threshold"] for name, r in results.items()},
         "metrics": {
             name: {k: r[k] for k in ("precision", "recall", "score", "objective", "beta")}

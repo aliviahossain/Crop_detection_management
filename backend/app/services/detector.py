@@ -106,6 +106,7 @@ class Detector:
         self._note: str | None = None
         self._thresholds: dict[str, float] = {}
         self._threshold_meta: dict = {}
+        self._class_mismatch: str | None = None
 
     # ------------------------------------------------------------------
     # confidence thresholds
@@ -189,8 +190,43 @@ class Detector:
             parsed = self._parse_names(names_raw)
             if parsed:
                 self._class_names = parsed
+                self._check_class_lockstep(parsed)
         self._version = f"onnx:{path.name}"
         log.info("Loaded ONNX detector %s with classes %s", path.name, self._class_names)
+
+    def _check_class_lockstep(self, model_names: list[str]) -> None:
+        """Verify the model's class order matches the taxonomy the app reasons with.
+
+        This is the worst failure mode in the system. If `data.yaml` listed the
+        classes in a different order than `taxonomy.CLASS_NAMES`, the model
+        returns index 1 meaning "early blight" while the backend reads index 1 as
+        "late blight" -- and every downstream decision is confidently wrong: the
+        advisory names the wrong pathogen, recommends the wrong chemistry, and
+        the hotspot map attributes an outbreak to the wrong disease. Nothing
+        else in the pipeline can detect it, because every component agrees with
+        every other; they are just all wrong together.
+
+        Comparing the names embedded in the checkpoint against the taxonomy
+        catches it at load time instead of in the field.
+        """
+        expected = list(taxonomy.CLASS_NAMES)
+        if model_names == expected:
+            self._class_mismatch = None
+            return
+
+        if sorted(model_names) == sorted(expected):
+            detail = (
+                f"ORDER MISMATCH: model class order {model_names} vs taxonomy {expected}. "
+                "Every prediction will be mislabelled. Retrain with data.yaml matching "
+                "taxonomy.CLASS_NAMES, or fix the taxonomy order to match the checkpoint."
+            )
+        else:
+            detail = (
+                f"CLASS SET MISMATCH: model has {model_names}, taxonomy expects {expected}. "
+                "The loaded weights were trained for a different label set."
+            )
+        self._class_mismatch = detail
+        log.error("Detector class lockstep check FAILED. %s", detail)
 
     @staticmethod
     def _parse_names(raw: str) -> list[str] | None:
@@ -222,6 +258,7 @@ class Detector:
         names = getattr(self._pt_model, "names", None)
         if isinstance(names, dict):
             self._class_names = [str(names[k]) for k in sorted(names)]
+            self._check_class_lockstep(self._class_names)
         self._version = f"pt:{path.name}"
 
     # ------------------------------------------------------------------
@@ -255,6 +292,7 @@ class Detector:
             "threshold_source": self._threshold_meta,
             "low_confidence_threshold": settings.low_confidence_threshold,
             "note": self._note,
+            "class_mismatch": self._class_mismatch,
         }
 
     def predict(self, image_path: str | Path) -> DetectionResult:

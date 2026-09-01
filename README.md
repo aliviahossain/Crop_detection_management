@@ -270,7 +270,7 @@ checkpoint, while Kaggle gives a 30 hr/week quota and a 12 hr session limit.
 Equivalent CLI:
 
 ```bash
-python ml/prepare_dataset.py --plantvillage <path> --annotated <field-data> \
+python ml/prepare_dataset.py --plantvillage <plantvillage-path> --annotated <plantdoc-path> \
     --out datasets/potato_yolo --cap-train 400 --oversample-min
 python ml/train_yolo.py       --data datasets/potato_yolo/data.yaml --epochs 100
 python ml/evaluate.py         --weights ml/weights/best.pt --data datasets/potato_yolo/data.yaml
@@ -286,7 +286,7 @@ Then place `ml/weights/` in the repo — `GET /meta/health` stops reporting
 
 | Concern | How it is handled |
 |---|---|
-| **Class imbalance** | PlantVillage potato is ~6.5:1 against `healthy` — the class that says *do not spray*. `--cap-train` caps majority classes in the train split only; `--oversample-min` lifts the minority. Measured **6.56:1 → 1.00:1**, printed before and after. |
+| **Class imbalance** | PlantVillage + PlantDoc potato is ~6.4:1 against `healthy` — the class that says *do not spray*. `--cap-train` caps majority classes in the train split only; `--oversample-min` lifts the minority. Measured **6.56:1 → 1.00:1**, printed before and after. |
 | **Split stratification** | Exact per-class quotas assigned by content hash: reproducible across reruns, no train/val leakage, and small classes are raised to ≥20 val images so their metric is a measurement rather than noise. |
 | **Model size** | `yolov8s` by default, not nano. Nano is the least accurate variant, and accuracy matters when a wrong answer means the wrong pesticide. `benchmark_inference.py` measures whether it fits the latency budget rather than assuming it. |
 | **Augmentation** | Geometry augmented freely, colour barely (`hsv_h=0.010`, `flipud=0`). Lesion colour is the signal separating early from late blight; hue jitter would teach the model to ignore it. |
