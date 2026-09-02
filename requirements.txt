@@ -1,0 +1,19 @@
+# Top-level entry point. Installs the core serving stack -- the only thing the
+# README asks you to install, and all that is needed to run the API:
+#
+#     pip install -r requirements.txt
+#
+# The requirements are split by purpose under backend/. Pull in the ones you
+# need by uncommenting the matching line below (or installing the file directly):
+#
+#   backend/requirements-extras.txt  ChromaDB, LangGraph, XGBoost, SHAP,
+#                                    anthropic -- each with a tested fallback.
+#   backend/requirements-train.txt   ultralytics + torch, for training and
+#                                    local .pt serving only (belongs on Kaggle).
+#   backend/requirements-dev.txt     pytest + onnx, to run backend/tests.
+
+-r backend/requirements.txt
+
+# -r backend/requirements-extras.txt
+# -r backend/requirements-train.txt
+# -r backend/requirements-dev.txt
