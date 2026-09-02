@@ -11,11 +11,18 @@ venv/
 .env.local
 
 # Data & models (never commit datasets or checkpoints)
+# The trained weights (best.pt ~22MB, best.onnx ~44MB) stay out of git --
+# distribute them out of band (release asset / Kaggle output / LFS) and drop
+# them into ml/weights/. The small tuned config + model card below ARE tracked
+# because the serving layer reads thresholds.json at runtime (absent -> every
+# class falls back to a single 0.25 threshold, not the tuned per-class values).
 datasets/
 runs/
 *.pt
 *.onnx
 !ml/weights/.gitkeep
+!ml/weights/thresholds.json
+!ml/weights/metrics.json
 # 2 KB synthetic model. Without it the onnxruntime-web integration test skips
 # silently on a fresh clone, which is worse than not having the test.
 !frontend/src/lib/__tests__/fixtures/*.onnx

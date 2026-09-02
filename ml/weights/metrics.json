@@ -1,0 +1,19 @@
+{
+  "model": "yolov8s.pt",
+  "epochs_requested": 100,
+  "imgsz": 640,
+  "classes": [
+    "potato_early_blight",
+    "potato_late_blight",
+    "potato_healthy"
+  ],
+  "map50": 0.995,
+  "map50_95": 0.9950000000000002,
+  "precision": 0.9815684291804301,
+  "recall": 0.9847345101511769,
+  "per_class_map50": {
+    "potato_early_blight": 0.9949999999999999,
+    "potato_late_blight": 0.9949999999999999,
+    "potato_healthy": 0.9949999999999999
+  }
+}
