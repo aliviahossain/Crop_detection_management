@@ -155,6 +155,22 @@ def main() -> int:
 
     if not preflight(args):
         return 1
+    # --- W&B: initialize before YOLO so Ultralytics auto-detects it ---
+    try:
+        import wandb
+        wandb.init(
+            project="cropguard-potato",
+            name=args.name,
+            config={
+                "model": args.model,
+                "epochs": args.epochs,
+                "imgsz": args.imgsz,
+                "batch": args.batch,
+                "dataset": str(args.data),
+            },
+        )
+    except Exception:
+        pass  # wandb unavailable or not logged in -- training continues without it
 
     from ultralytics import YOLO
 
@@ -205,6 +221,14 @@ def main() -> int:
     # `results` IS that pass's metrics. Calling model.val() again here repeated
     # the identical computation and burned GPU quota for nothing.
     metrics = results
+    maps_raw = getattr(metrics.box, "maps", None)
+    if maps_raw is None:
+        maps = []
+    elif hasattr(maps_raw, "tolist"):
+        maps = maps_raw.tolist()        # numpy array
+    else:
+        maps = list(maps_raw)           # list or tuple
+
     summary = {
         "model": args.model,
         "epochs_requested": args.epochs,
@@ -216,7 +240,7 @@ def main() -> int:
         "recall": float(getattr(metrics.box, "mr", 0.0)),
         "per_class_map50": {
             CLASS_NAMES[i]: float(v)
-            for i, v in enumerate(getattr(metrics.box, "maps", []) or [])
+            for i, v in enumerate(maps)
             if i < len(CLASS_NAMES)
         },
     }
