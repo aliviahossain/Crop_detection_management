@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit configuration for CropGuard (Crop Detection & Management)
+# Docs: https://docs.coderabbit.ai/guides/configure-coderabbit
+
+language: en-US
+early_access: false
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  changed_files_summary: true
+
+  # Auto-review pull requests
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+
+  # Skip noisy / generated paths
+  path_filters:
+    - "!**/dist/**"
+    - "!**/node_modules/**"
+    - "!**/.venv/**"
+    - "!**/__pycache__/**"
+    - "!**/*.db"
+    - "!**/weights/**"
+    - "!**/*.onnx"
+    - "!**/*.pt"
+    - "!package-lock.json"
+
+  # Extra context per area of the codebase
+  path_instructions:
+    - path: "backend/**"
+      instructions: >-
+        FastAPI/Python backend. Check for proper request validation, error
+        handling, async correctness, and that secrets are read from the
+        environment rather than hardcoded. Flag SQL injection and unsanitized
+        input.
+    - path: "frontend/**"
+      instructions: >-
+        React + Vite frontend. Check for React hook dependency issues, missing
+        keys in lists, unhandled promise rejections, and accessibility of
+        interactive elements.
+    - path: "ml/**"
+      instructions: >-
+        Machine learning training/inference code. Check for reproducibility
+        (seeds), data leakage between train/val/test, and correct handling of
+        model weights and file paths.
+
+  # Static analysis / linters CodeRabbit should run
+  tools:
+    ruff:
+      enabled: true
+    eslint:
+      enabled: true
+    markdownlint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    yamllint:
+      enabled: true
+    actionlint:
+      enabled: true
+
+chat:
+  auto_reply: true
