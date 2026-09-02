@@ -205,6 +205,9 @@ def main() -> int:
     # `results` IS that pass's metrics. Calling model.val() again here repeated
     # the identical computation and burned GPU quota for nothing.
     metrics = results
+    maps = getattr(metrics.box, "maps", None)
+    maps = maps.tolist() if maps is not None else []
+
     summary = {
         "model": args.model,
         "epochs_requested": args.epochs,
@@ -216,7 +219,7 @@ def main() -> int:
         "recall": float(getattr(metrics.box, "mr", 0.0)),
         "per_class_map50": {
             CLASS_NAMES[i]: float(v)
-            for i, v in enumerate(getattr(metrics.box, "maps", []) or [])
+            for i, v in enumerate(maps)
             if i < len(CLASS_NAMES)
         },
     }
