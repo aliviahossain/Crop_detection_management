@@ -1,0 +1,33 @@
+{
+  "weights": "/kaggle/working/ml_weights/best.pt",
+  "imgsz": 640,
+  "results": [
+    {
+      "split": "combined",
+      "map50": 0.995,
+      "map50_95": 0.993,
+      "precision": 0.9883,
+      "recall": 0.9988,
+      "per_class_map50_95": {
+        "potato_early_blight": 0.995,
+        "potato_late_blight": 0.9889,
+        "potato_healthy": 0.995
+      }
+    },
+    {
+      "split": "lab (PlantVillage)",
+      "map50": 0.995,
+      "map50_95": 0.995,
+      "precision": 0.9814,
+      "recall": 0.985,
+      "per_class_map50_95": {
+        "potato_early_blight": 0.995,
+        "potato_late_blight": 0.995,
+        "potato_healthy": 0.995
+      }
+    }
+  ],
+  "headline_metric": 0.995,
+  "headline_source": "lab (PlantVillage)",
+  "verdict": "NO FIELD SPLIT. Every number above is a LAB metric measured on uniform-background PlantVillage images. Do not present it as field accuracy. Add field-condition images with prepare_dataset.py --annotated and re-run."
+}

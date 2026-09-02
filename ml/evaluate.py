@@ -38,7 +38,13 @@ def run_split(model, data_yaml: Path, imgsz: int, split_name: str) -> dict | Non
     print(f"\nEvaluating: {split_name}  ({data_yaml.name})")
     metrics = model.val(data=str(data_yaml), imgsz=imgsz, verbose=False)
     per_class = {}
-    maps = list(getattr(metrics.box, "maps", []) or [])
+    maps_raw = getattr(metrics.box, "maps", None)
+    if maps_raw is None:
+        maps = []
+    elif hasattr(maps_raw, "tolist"):
+        maps = maps_raw.tolist()
+    else:
+        maps = list(maps_raw)
     for i, name in enumerate(CLASS_NAMES):
         if i < len(maps):
             per_class[name] = round(float(maps[i]), 4)
