@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from '../lib/api.js'
 import { useLang, useT } from '../lib/i18n.js'
 import RiskPanel from '../components/RiskPanel.jsx'
@@ -18,9 +18,8 @@ export default function RiskPage() {
   const [result, setResult] = useState(null)
   const [saveCase, setSaveCase] = useState(false)
 
-  const submit = async (event) => {
-    event.preventDefault()
-    if (!ctx.latitude || !ctx.longitude) {
+  const assess = async (context, { save = false } = {}) => {
+    if (!context.latitude || !context.longitude) {
       setError('Latitude and longitude are required — the risk models run on your local weather.')
       return
     }
@@ -29,16 +28,16 @@ export default function RiskPage() {
     try {
       setResult(
         await api.risk({
-          latitude: Number(ctx.latitude),
-          longitude: Number(ctx.longitude),
+          latitude: Number(context.latitude),
+          longitude: Number(context.longitude),
           crop: 'potato',
-          variety: ctx.variety || null,
-          crop_stage: ctx.crop_stage || null,
-          soil_condition: ctx.soil_condition || null,
-          district: ctx.district || null,
-          village: ctx.village || null,
+          variety: context.variety || null,
+          crop_stage: context.crop_stage || null,
+          soil_condition: context.soil_condition || null,
+          district: context.district || null,
+          village: context.village || null,
           language: lang,
-          save_case: saveCase,
+          save_case: save,
           include_advisory: true,
         }),
       )
@@ -47,6 +46,18 @@ export default function RiskPage() {
     } finally {
       setBusy(false)
     }
+  }
+
+  // Open on a populated forecast for a real potato-growing location, so the
+  // landing screen leads with the prediction engine working -- not a blank form.
+  useEffect(() => {
+    assess(DEFAULT)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const submit = (event) => {
+    event.preventDefault()
+    assess(ctx, { save: saveCase })
   }
 
   return (
@@ -86,7 +97,7 @@ export default function RiskPage() {
         </form>
 
         <div className="stack">
-          {!result && <div className="card muted">{t('common.none')}</div>}
+          {!result && <div className="card muted">{busy ? t('common.loading') : t('common.none')}</div>}
           {result && (
             <>
               <RiskPanel assessment={result.assessment} />

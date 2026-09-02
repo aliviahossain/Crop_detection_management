@@ -12,11 +12,14 @@ import ReviewPage from './pages/ReviewPage.jsx'
 function Nav() {
   const t = useT()
   const { lang, setLang } = useLang()
+  // Ordered as the system's story: prediction and surveillance lead, image
+  // detection supports them, then the officer tools. The differentiator is the
+  // forecast, not the photo classifier -- the nav should say so.
   const links = [
-    ['/scan', 'nav.scan'],
-    ['/check', 'nav.check'],
     ['/risk', 'nav.risk'],
     ['/map', 'nav.map'],
+    ['/check', 'nav.check'],
+    ['/scan', 'nav.scan'],
     ['/dashboard', 'nav.dashboard'],
     ['/review', 'nav.review'],
   ]

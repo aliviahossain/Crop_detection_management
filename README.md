@@ -40,7 +40,7 @@ banner. On a fresh clone, with no weights and no API keys:
 | Risk models | **Fully working** — the agronomic models need no training data. |
 | Advisory / RAG | **Fully working** — BM25 retrieval if ChromaDB is not installed. |
 | Marathi / Hindi / Bengali | **Fully working** — template catalog, no API key needed. |
-| XGBoost risk layer | **Inactive by design** — no historical outbreak data exists yet to train it honestly. |
+| XGBoost risk layer | **Inactive by design** — no historical outbreak data exists yet to train it honestly. It activates as confirmed cases accrue: `scripts/export_risk_dataset.py` builds a leakage-safe training set from them, `ml/train_risk_xgb.py` trains it (both refuse fabricated or too-little data), and the backend loads the artifact automatically. |
 
 Nothing fabricates a result to look complete.
 
