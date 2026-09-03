@@ -62,7 +62,11 @@ Requires Python 3.10–3.13 and Node 18+.
 python -m venv .venv
 .venv/Scripts/activate            # Windows;  source .venv/bin/activate on Unix
 pip install -r backend/requirements.txt
-cp .env.example .env              # optional: add OPENWEATHER_API_KEY
+# First-time setup ONLY — creates .env if you don't have one, never overwrites an existing one.
+# Skip this entirely if .env already exists (overwriting it wipes your OPENWEATHER_API_KEY).
+#   bash:        [ -f .env ] || cp .env.example .env
+#   PowerShell:  if (!(Test-Path .env)) { Copy-Item .env.example .env }
+# Then add OPENWEATHER_API_KEY to .env.
 
 uvicorn app.main:app --reload --app-dir backend
 # API docs: http://localhost:8000/docs
