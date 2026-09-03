@@ -1,11 +1,15 @@
 """
 merge_field.py — add pre-annotated field images into an existing YOLO split.
 
+Matches prepare_dataset.py output structure:
+    <out>/images/train,val,test
+    <out>/labels/train,val,test
+
 Run AFTER prepare_dataset.py has already built the base YOLO split.
 
 Usage:
-    python merge_field.py \
-        --field-dir /kaggle/input/cropguard-field-potato \
+    python ml/merge_field.py \
+        --field-dir /kaggle/input/datasets/omsinghlodhi/cropguard-field-potato/field_flat \
         --out       /kaggle/working/datasets/potato_yolo \
         --seed      42 \
         --ratios    0.8 0.1 0.1
@@ -17,6 +21,7 @@ import shutil
 from pathlib import Path
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".JPG", ".JPEG", ".PNG"}
+SPLITS = ("train", "val", "test")
 
 
 def parse_args():
@@ -56,20 +61,22 @@ def validate(args):
 
     if not args.out.exists():
         errors.append(
-            f"--out directory not found: {args.out}\n"
-            "  Run prepare_dataset.py first to build the base YOLO split."
+            f"--out not found: {args.out}\n"
+            "  Run prepare_dataset.py first."
         )
+    else:
+        # Structure: <out>/images/<split> and <out>/labels/<split>
+        for split in SPLITS:
+            for subdir in ("images", "labels"):
+                d = args.out / subdir / split
+                if not d.exists():
+                    errors.append(
+                        f"Expected directory not found: {d}\n"
+                        "  Verify prepare_dataset.py completed successfully."
+                    )
 
     if abs(sum(args.ratios) - 1.0) > 1e-6:
         errors.append(f"--ratios must sum to 1.0, got {sum(args.ratios):.4f}")
-
-    for split in ("train", "valid", "test"):
-        split_dir = args.out / split
-        if args.out.exists() and not split_dir.exists():
-            errors.append(
-                f"Expected split directory not found: {split_dir}\n"
-                "  Verify prepare_dataset.py completed successfully."
-            )
 
     if errors:
         for e in errors:
@@ -79,8 +86,7 @@ def validate(args):
 
 def collect_pairs(field_dir: Path):
     """
-    Find valid image/label pairs in the flat field folder.
-    Skips images with no paired .txt label and warns about them.
+    Find valid image/label pairs. Skips images with no paired label and warns.
     Returns list of (image_path, label_path) tuples.
     """
     images_dir = field_dir / "images"
@@ -100,7 +106,7 @@ def collect_pairs(field_dir: Path):
 
     if skipped:
         print(f"  WARNING: {len(skipped)} image(s) skipped — no paired label file:")
-        for name in skipped[:10]:          # show at most 10
+        for name in skipped[:10]:
             print(f"    {name}")
         if len(skipped) > 10:
             print(f"    ... and {len(skipped) - 10} more")
@@ -109,10 +115,7 @@ def collect_pairs(field_dir: Path):
 
 
 def split_pairs(pairs, ratios, seed):
-    """
-    Shuffle with fixed seed and split into train/valid/test.
-    Test gets the remainder to avoid losing images to rounding.
-    """
+    """Shuffle with fixed seed and split into train/val/test."""
     rng = random.Random(seed)
     shuffled = pairs[:]
     rng.shuffle(shuffled)
@@ -120,20 +123,24 @@ def split_pairs(pairs, ratios, seed):
     n       = len(shuffled)
     n_train = int(n * ratios[0])
     n_val   = int(n * ratios[1])
-    # n_test = remainder — no rounding loss
+    # test gets remainder — no rounding loss
 
     return {
         "train": shuffled[:n_train],
-        "valid": shuffled[n_train : n_train + n_val],
+        "val":   shuffled[n_train : n_train + n_val],
         "test":  shuffled[n_train + n_val :],
     }
 
 
 def copy_pairs(split_dict, out_dir: Path):
-    """Copy image/label pairs into the existing YOLO directory structure."""
+    """
+    Copy into prepare_dataset.py structure:
+        <out>/images/<split>/
+        <out>/labels/<split>/
+    """
     for split_name, pairs in split_dict.items():
-        img_out = out_dir / split_name / "images"
-        lbl_out = out_dir / split_name / "labels"
+        img_out = out_dir / "images" / split_name
+        lbl_out = out_dir / "labels" / split_name
         img_out.mkdir(parents=True, exist_ok=True)
         lbl_out.mkdir(parents=True, exist_ok=True)
 
@@ -152,25 +159,23 @@ def main():
     print("merge_field.py")
     print(f"  Field dir : {args.field_dir}")
     print(f"  Output    : {args.out}")
+    print(f"  Structure : <out>/images/<split> + <out>/labels/<split>")
     print(f"  Ratios    : train={args.ratios[0]}  val={args.ratios[1]}  test={args.ratios[2]}")
     print(f"  Seed      : {args.seed}")
     print("=" * 55)
     print()
 
-    # ── 1. Collect ──────────────────────────────────────────
     print("Collecting image/label pairs...")
     pairs = collect_pairs(args.field_dir)
     print(f"  {len(pairs)} valid pairs found")
     print()
 
-    # ── 2. Split ────────────────────────────────────────────
     print("Splitting...")
     split_dict = split_pairs(pairs, args.ratios, args.seed)
     for name, p in split_dict.items():
         print(f"  {name:5s} : {len(p)}")
     print()
 
-    # ── 3. Copy ─────────────────────────────────────────────
     print("Copying into existing YOLO split...")
     copy_pairs(split_dict, args.out)
 
