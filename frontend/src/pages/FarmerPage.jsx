@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api.js'
 import { useLang, useT } from '../lib/i18n.js'
+import { useVideoDevices } from '../lib/useVideoDevices.js'
 import AdvisoryCard from '../components/AdvisoryCard.jsx'
 import RiskPanel from '../components/RiskPanel.jsx'
 import FieldContextForm, { emptyContext } from '../components/FieldContextForm.jsx'
@@ -43,6 +44,75 @@ export default function FarmerPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
+
+  // Live camera capture (phone connected as a camera, or the laptop webcam).
+  const { devices, refresh: refreshDevices } = useVideoDevices()
+  const [deviceId, setDeviceId] = useState('')
+  const [cameraOn, setCameraOn] = useState(false)
+  const videoRef = useRef(null)
+  const streamRef = useRef(null)
+
+  const stopCamera = useCallback(() => {
+    streamRef.current?.getTracks?.().forEach((track) => track.stop())
+    streamRef.current = null
+    if (videoRef.current) videoRef.current.srcObject = null
+    setCameraOn(false)
+  }, [])
+
+  const startCamera = useCallback(async () => {
+    setError(null)
+    setResult(null)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          ...(deviceId
+            ? { deviceId: { exact: deviceId } }
+            : { facingMode: { ideal: 'environment' } }),
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      })
+      streamRef.current = stream
+      setCameraOn(true)
+      // The <video> mounts with cameraOn; attach on the next tick.
+      requestAnimationFrame(async () => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+          await videoRef.current.play().catch(() => {})
+        }
+      })
+      refreshDevices()
+    } catch (err) {
+      setError(err.message)
+      setCameraOn(false)
+    }
+  }, [deviceId, refreshDevices])
+
+  // Grab the current video frame as the photo, then close the camera.
+  const capture = useCallback(() => {
+    const video = videoRef.current
+    if (!video) return
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    canvas.getContext('2d').drawImage(video, 0, 0)
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return
+        const captured = new File([blob], 'capture.jpg', { type: 'image/jpeg' })
+        setFile(captured)
+        setPreviewUrl(URL.createObjectURL(captured))
+        setResult(null)
+        setError(null)
+        stopCamera()
+      },
+      'image/jpeg',
+      0.9,
+    )
+  }, [stopCamera])
+
+  useEffect(() => stopCamera, [stopCamera]) // release the camera on unmount
 
   const pick = (event) => {
     const chosen = event.target.files?.[0]
@@ -90,16 +160,55 @@ export default function FarmerPage() {
 
       <div className="grid two">
         <form className="card stack" onSubmit={submit}>
-          <label className="file-drop">
-            <span className="ico" aria-hidden="true">
-              📷
-            </span>
-            <b>{file ? file.name : t('farmer.choose')}</b>
-            <small>{t('farmer.tapPhoto')}</small>
-            <input type="file" accept="image/*" capture="environment" onChange={pick} />
-          </label>
+          {cameraOn ? (
+            <div className="stack">
+              <video
+                ref={videoRef}
+                playsInline
+                muted
+                style={{ width: '100%', borderRadius: 10, background: '#000' }}
+              />
+              <div className="inline">
+                <button type="button" className="primary auto" onClick={capture}>
+                  {t('farmer.capture')}
+                </button>
+                <button type="button" className="ghost" onClick={stopCamera}>
+                  {t('common.cancel')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="inline">
+                <button type="button" className="primary auto" onClick={startCamera}>
+                  {t('farmer.takePhoto')}
+                </button>
+                <label
+                  className="ghost auto"
+                  style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
+                >
+                  {t('farmer.upload')}
+                  <input type="file" accept="image/*" onChange={pick} hidden />
+                </label>
+              </div>
+              {devices.length > 1 && (
+                <label className="inline small" style={{ gap: 6 }}>
+                  <span className="muted">{t('scan.camera')}</span>
+                  <select value={deviceId} onChange={(e) => setDeviceId(e.target.value)}>
+                    <option value="">{t('scan.cameraAuto')}</option>
+                    {devices.map((d, i) => (
+                      <option key={d.deviceId || i} value={d.deviceId}>
+                        {d.label || `${t('scan.camera')} ${i + 1}`}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {file && <div className="muted small">{file.name}</div>}
+            </>
+          )}
 
-          {previewUrl && !result && (
+          {previewUrl && !result && !cameraOn && (
             <img src={previewUrl} alt="" style={{ maxWidth: '100%', borderRadius: 10 }} />
           )}
 

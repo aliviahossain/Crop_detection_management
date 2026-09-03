@@ -5,6 +5,7 @@ import { useLang, useT } from '../lib/i18n.js'
 import { LiveDetector, MODE } from '../lib/liveDetector.js'
 import { STATUS, VerdictStabilizer } from '../lib/stabilizer.js'
 import { assessFrame, hintFor } from '../lib/frameQuality.js'
+import { useVideoDevices } from '../lib/useVideoDevices.js'
 import AdvisoryCard from '../components/AdvisoryCard.jsx'
 
 // 4 fps. Fast enough to feel live, slow enough that a mid-range phone is not
@@ -33,6 +34,8 @@ export default function ScanPage() {
 
   const [cameraState, setCameraState] = useState('idle') // idle|starting|live|denied|error
   const [cameraError, setCameraError] = useState(null)
+  const { devices, refresh: refreshDevices } = useVideoDevices()
+  const [deviceId, setDeviceId] = useState('') // '' = auto (rear camera on a phone)
   const [mode, setMode] = useState(null)
   const [modeNote, setModeNote] = useState(null)
   const [verdict, setVerdict] = useState({ status: STATUS.SCANNING, progress: 0 })
@@ -71,8 +74,10 @@ export default function ScanPage() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          // Rear camera on a phone; ignored on a laptop.
-          facingMode: { ideal: 'environment' },
+          // A chosen camera wins; otherwise prefer the rear camera on a phone.
+          ...(deviceId
+            ? { deviceId: { exact: deviceId } }
+            : { facingMode: { ideal: 'environment' } }),
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
@@ -81,11 +86,12 @@ export default function ScanPage() {
       videoRef.current.srcObject = stream
       await videoRef.current.play()
       setCameraState('live')
+      refreshDevices() // labels are readable now that permission is granted
     } catch (err) {
       setCameraState(err.name === 'NotAllowedError' ? 'denied' : 'error')
       setCameraError(err.message)
     }
-  }, [])
+  }, [deviceId, refreshDevices])
 
   // ---------------------------------------------------------------- detector
   useEffect(() => {
@@ -324,6 +330,20 @@ export default function ScanPage() {
                 </div>
               )}
             </div>
+
+            {devices.length > 1 && cameraState !== 'live' && (
+              <label className="inline small" style={{ marginTop: 12, gap: 6 }}>
+                <span className="muted">{t('scan.camera')}</span>
+                <select value={deviceId} onChange={(e) => setDeviceId(e.target.value)}>
+                  <option value="">{t('scan.cameraAuto')}</option>
+                  {devices.map((d, i) => (
+                    <option key={d.deviceId || i} value={d.deviceId}>
+                      {d.label || `${t('scan.camera')} ${i + 1}`}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
 
             <div className="inline" style={{ marginTop: 12 }}>
               {cameraState === 'live' ? (

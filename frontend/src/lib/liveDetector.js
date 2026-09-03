@@ -82,7 +82,11 @@ export class LiveDetector {
       this.note = null
       return this.mode
     } catch (err) {
-      this.note = `On-device inference unavailable (${err.message}). Using the server.`
+      // On-device WASM could not start in this environment. The farmer does not
+      // need the raw runtime error: the scanner falls back to server inference
+      // and the "Server mode" badge already signals which path is live. Keep the
+      // detail in the console for debugging only.
+      console.info('[scanner] on-device inference unavailable, using server:', err.message)
       return this._fallback()
     }
   }

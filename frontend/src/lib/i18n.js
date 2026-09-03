@@ -80,6 +80,9 @@ const STRINGS = {
     bn: 'অসুস্থ পাতার একটি কাছের ছবি, দিনের আলোয়.',
   },
   'farmer.choose': { en: 'Choose photo', mr: 'फोटो निवडा', hi: 'फोटो चुनें', bn: 'ছবি বাছুন' },
+  'farmer.takePhoto': { en: 'Take photo', mr: 'फोटो काढा', hi: 'फोटो लें', bn: 'ছবি তুলুন' },
+  'farmer.upload': { en: 'Upload photo', mr: 'फोटो अपलोड करा', hi: 'फोटो अपलोड करें', bn: 'ছবি আপলোড করুন' },
+  'farmer.capture': { en: 'Capture', mr: 'टिपा', hi: 'खींचें', bn: 'তুলুন' },
 
   'farmer.tapPhoto': {
     en: 'Tap to take or pick a photo',
@@ -194,6 +197,7 @@ const STRINGS = {
   },
 
   'common.loading': { en: 'Loading', mr: 'लोड होत आहे', hi: 'लोड हो रहा है', bn: 'লোড হচ্ছে' },
+  'common.cancel': { en: 'Cancel', mr: 'रद्द करा', hi: 'रद्द करें', bn: 'বাতিল' },
   'common.error': { en: 'Something went wrong', mr: 'काहीतरी चुकले', hi: 'कुछ गड़बड़ हुई', bn: 'কিছু ভুল হয়েছে' },
   'common.optional': { en: 'optional', mr: 'ऐच्छिक', hi: 'वैकल्पिक', bn: 'ঐচ্ছিক' },
   'common.none': { en: 'Nothing yet', mr: 'अद्याप काही नाही', hi: 'अभी कुछ नहीं', bn: 'এখনও কিছু নেই' },
@@ -223,6 +227,8 @@ const STRINGS = {
   },
   'scan.start': { en: 'Start camera', mr: 'कॅमेरा सुरू करा', hi: 'कैमरा शुरू करें', bn: 'ক্যামেরা চালু করুন' },
   'scan.stop': { en: 'Stop camera', mr: 'कॅमेरा बंद करा', hi: 'कैमरा बंद करें', bn: 'ক্যামেরা বন্ধ করুন' },
+  'scan.camera': { en: 'Camera', mr: 'कॅमेरा', hi: 'कैमरा', bn: 'ক্যামেরা' },
+  'scan.cameraAuto': { en: 'Automatic', mr: 'स्वयंचलित', hi: 'स्वचालित', bn: 'স্বয়ংক্রিয়' },
   'scan.pressStart': {
     en: 'Tap Start camera',
     mr: 'कॅमेरा सुरू करा दाबा',
