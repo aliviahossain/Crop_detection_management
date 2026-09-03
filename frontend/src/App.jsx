@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { LANGUAGES, LangContext, useLang, useT } from './lib/i18n.js'
 import { api } from './lib/api.js'
 import MenuDrawer from './components/MenuDrawer.jsx'
+import ChatBot from './components/ChatBot.jsx'
 import FarmerPage from './pages/FarmerPage.jsx'
 import ScanPage from './pages/ScanPage.jsx'
 import RiskPage from './pages/RiskPage.jsx'
@@ -115,6 +116,7 @@ export default function App() {
           <Route path="/review" element={<ReviewPage />} />
           <Route path="*" element={<Navigate to="/check" replace />} />
         </Routes>
+        <ChatBot />
       </div>
     </LangContext.Provider>
   )

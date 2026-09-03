@@ -101,6 +101,28 @@ class AdvisoryResponse(BaseModel):
 
 
 # ----------------------------------------------------------------------
+# Assistant chatbot
+# ----------------------------------------------------------------------
+class ChatMessage(BaseModel):
+    role: str = Field(description="'user' or 'assistant'")
+    content: str = Field(min_length=1, max_length=4000)
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=4000)
+    # Prior turns for context, oldest first. Capped server-side.
+    history: list[ChatMessage] = Field(default_factory=list)
+    language: str = "en"
+
+
+class ChatResponse(BaseModel):
+    reply: str
+    language: str
+    # False when the Gemini key is unset and the canned fallback answered.
+    live: bool
+
+
+# ----------------------------------------------------------------------
 # Sensors
 # ----------------------------------------------------------------------
 class SensorReadingIn(BaseModel):

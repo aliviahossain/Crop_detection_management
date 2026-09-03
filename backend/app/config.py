@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     advisory_llm_model: str = "claude-sonnet-5"
 
+    # Assistant chatbot (Gemini). Leave the key blank to run a documented,
+    # offline canned-reply fallback; set it to enable live Gemini answers.
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
+
     # i18n
     default_language: str = "en"
     supported_languages: str = "en,mr,hi,bn"
@@ -50,6 +55,10 @@ class Settings(BaseSettings):
     @property
     def llm_enabled(self) -> bool:
         return bool(self.anthropic_api_key)
+
+    @property
+    def chat_enabled(self) -> bool:
+        return bool(self.gemini_api_key)
 
 
 @lru_cache

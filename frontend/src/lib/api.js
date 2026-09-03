@@ -60,6 +60,11 @@ export const api = {
   sensors: (params) => request(`/sensors?${new URLSearchParams(params)}`),
   sensorSummary: () => request('/sensors/summary'),
   postSensor: (payload) => request('/sensors', json(payload)),
+
+  // Floating assistant. The Gemini key lives on the backend; we only ever
+  // send the message + recent history and get a reply back.
+  chat: (payload) => request('/chat', json(payload)),
+  chatStatus: () => request('/chat/status'),
 }
 
 export const mediaUrl = (imagePath) => {

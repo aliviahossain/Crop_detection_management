@@ -329,6 +329,31 @@ const STRINGS = {
     hi: 'स्वीकारें दबाने तक कुछ नहीं सहेजा जाता.',
     bn: 'গ্রহণ করুন না চাপলে কিছুই সংরক্ষিত হয় না.',
   },
+
+  'chat.open': { en: 'Ask CropGuard', mr: 'क्रॉपगार्डला विचारा', hi: 'क्रॉपगार्ड से पूछें', bn: 'ক্রপগার্ডকে জিজ্ঞাসা করুন' },
+  'chat.title': { en: 'CropGuard Assistant', mr: 'क्रॉपगार्ड सहायक', hi: 'क्रॉपगार्ड सहायक', bn: 'ক্রপগার্ড সহায়ক' },
+  'chat.subtitle': {
+    en: 'Ask about potato disease or how to use the app',
+    mr: 'बटाटा रोग किंवा अ‍ॅप वापराबद्दल विचारा',
+    hi: 'आलू रोग या ऐप उपयोग के बारे में पूछें',
+    bn: 'আলুর রোগ বা অ্যাপ ব্যবহার নিয়ে জিজ্ঞাসা করুন',
+  },
+  'chat.greeting': {
+    en: 'Hi! I can help with potato diseases, safe pesticide use, and using CropGuard. What would you like to know?',
+    mr: 'नमस्कार! बटाटा रोग, सुरक्षित कीटकनाशक वापर आणि क्रॉपगार्ड वापरण्यात मी मदत करू शकतो. काय जाणून घ्यायचे आहे?',
+    hi: 'नमस्ते! मैं आलू रोग, सुरक्षित कीटनाशक उपयोग और क्रॉपगार्ड चलाने में मदद कर सकता हूँ. आप क्या जानना चाहेंगे?',
+    bn: 'নমস্কার! আমি আলুর রোগ, নিরাপদ কীটনাশক ব্যবহার এবং ক্রপগার্ড চালাতে সাহায্য করতে পারি. আপনি কী জানতে চান?',
+  },
+  'chat.placeholder': { en: 'Type your question…', mr: 'तुमचा प्रश्न लिहा…', hi: 'अपना सवाल लिखें…', bn: 'আপনার প্রশ্ন লিখুন…' },
+  'chat.send': { en: 'Send', mr: 'पाठवा', hi: 'भेजें', bn: 'পাঠান' },
+  'chat.close': { en: 'Close chat', mr: 'चॅट बंद करा', hi: 'चैट बंद करें', bn: 'চ্যাট বন্ধ করুন' },
+  'chat.thinking': { en: 'Thinking…', mr: 'विचार करत आहे…', hi: 'सोच रहा है…', bn: 'ভাবছে…' },
+  'chat.error': {
+    en: 'Could not reach the assistant. Please try again.',
+    mr: 'सहायकाशी संपर्क झाला नाही. पुन्हा प्रयत्न करा.',
+    hi: 'सहायक से संपर्क नहीं हुआ. दोबारा कोशिश करें.',
+    bn: 'সহায়কের সঙ্গে সংযোগ হয়নি. আবার চেষ্টা করুন.',
+  },
 }
 
 export const LangContext = createContext({ lang: 'en', setLang: () => {} })
