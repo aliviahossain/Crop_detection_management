@@ -2,7 +2,7 @@
 //
 // A per-frame prediction flickers. Pointed at one diseased leaf, a detector will
 // happily emit late blight, then early blight, then nothing, across three
-// consecutive frames — and a UI that renders each frame directly shows a
+// consecutive frames, and a UI that renders each frame directly shows a
 // farmer a slot machine.
 //
 // Worse, it invites acting on a single lucky frame. A pesticide decision should
@@ -22,7 +22,7 @@ export const STABILIZER_DEFAULTS = {
 export const STATUS = {
   SCANNING: 'scanning', // not enough good frames yet
   POOR_QUALITY: 'poor_quality', // frames arriving, but unusable
-  UNSTABLE: 'unstable', // readings disagree — keep holding
+  UNSTABLE: 'unstable', // readings disagree, keep holding
   STABLE: 'stable', // verdict ready
 }
 
@@ -49,7 +49,7 @@ export class VerdictStabilizer {
     if (this.recentQuality.length > this.cfg.windowSize) this.recentQuality.shift()
 
     // Bad frames are recorded for the hint, but must never dilute or corrupt the
-    // consensus — a blurred frame's prediction is not evidence of anything.
+    // consensus, a blurred frame's prediction is not evidence of anything.
     if (qualityOk) {
       this.frames.push({ classKey, confidence })
       if (this.frames.length > this.cfg.windowSize) this.frames.shift()
@@ -100,7 +100,7 @@ export class VerdictStabilizer {
 
     if (topKey === '__none__') {
       // The model consistently sees nothing. That is a real, reportable outcome
-      // (bad framing, or a subject outside the three trained classes) — not a
+      // (bad framing, or a subject outside the three trained classes), not a
       // verdict about the crop.
       return {
         status: share >= agreement ? STATUS.STABLE : STATUS.UNSTABLE,

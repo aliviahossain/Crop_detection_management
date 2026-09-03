@@ -1,4 +1,4 @@
-import { prettify } from '../lib/i18n.js'
+import { prettify, useT } from '../lib/i18n.js'
 
 const URGENCY_CLASS = { routine: 'low', soon: 'medium', urgent: 'high' }
 
@@ -10,6 +10,7 @@ const URGENCY_CLASS = { routine: 'low', soon: 'medium', urgent: 'high' }
  * an expert.
  */
 export default function AdvisoryCard({ advisory, triage }) {
+  const t = useT()
   if (!advisory) return null
   const { chemical, safety, referral, follow_up: followUp, sections = [], references = [] } = advisory
   const chemicalWithheld = chemical?.status === 'withheld_pending_expert_confirmation'
@@ -17,7 +18,7 @@ export default function AdvisoryCard({ advisory, triage }) {
   return (
     <div className="card advisory stack">
       <div className="spread">
-        <h2 style={{ margin: 0 }}>{advisory.language === 'en' ? 'Advisory' : 'सल्ला / Advisory'}</h2>
+        <h2 style={{ margin: 0 }}>{t('advisory.title')}</h2>
         {triage?.urgency && (
           <span className={`badge ${URGENCY_CLASS[triage.urgency] || 'neutral'}`}>
             {referral?.urgency || prettify(triage.urgency)}
@@ -37,7 +38,7 @@ export default function AdvisoryCard({ advisory, triage }) {
           </ul>
           {referral.reasons?.length > 0 && (
             <details>
-              <summary>Why this case needs an expert</summary>
+              <summary>{t('advisory.whyExpert')}</summary>
               <ul>
                 {referral.reasons.map((r, i) => (
                   <li key={i}>
@@ -79,9 +80,9 @@ export default function AdvisoryCard({ advisory, triage }) {
                 <table>
                   <thead>
                     <tr>
-                      <th>Product</th>
-                      <th>Dose</th>
-                      <th>Notes</th>
+                      <th>{t('advisory.product')}</th>
+                      <th>{t('advisory.dose')}</th>
+                      <th>{t('advisory.notes')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -123,12 +124,14 @@ export default function AdvisoryCard({ advisory, triage }) {
 
       {references.length > 0 && (
         <details>
-          <summary>Sources ({references.length} knowledge-base sections)</summary>
+          <summary>
+            {t('advisory.sources')} ({references.length})
+          </summary>
           <ul>
             {references.map((ref, i) => (
               <li key={i}>
                 <strong>
-                  {ref.title} — {ref.section}
+                  {ref.title}: {ref.section}
                 </strong>
                 <div className="muted small">{ref.excerpt_translated || ref.excerpt}</div>
                 {ref.sources?.length > 0 && (

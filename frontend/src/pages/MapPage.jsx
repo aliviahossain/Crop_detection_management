@@ -46,33 +46,32 @@ export default function MapPage() {
     <main className="page">
       <h1>{t('nav.map')}</h1>
       <p className="lede">
-        Cases aggregated on a ~5 km grid. An expert-confirmed case counts fully; an unreviewed
-        model prediction counts at {data ? data.unverified_weight : 0.4} — officials should not
-        deploy staff on unverified AI output, but should still see a spike of pending reports.
+        Cases grouped on a 5 km grid. A confirmed case counts fully, an unreviewed one counts at{' '}
+        {data ? data.unverified_weight : 0.4}, so a spike still shows without sending staff out on
+        unchecked AI output.
       </p>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="inline">
+        <div className="filters">
           <div>
-            <label>Window</label>
+            <label>{t('common.window')}</label>
             <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
-              <option value={7}>Last 7 days</option>
-              <option value={30}>Last 30 days</option>
-              <option value={90}>Last 90 days</option>
+              <option value={7}>{t('common.days7')}</option>
+              <option value={30}>{t('common.days30')}</option>
+              <option value={90}>{t('common.days90')}</option>
             </select>
           </div>
           <div>
-            <label>Disease / pest</label>
+            <label>Disease</label>
             <select value={classKey} onChange={(e) => setClassKey(e.target.value)}>
               <option value="">All</option>
               <option value="potato_late_blight">Late blight</option>
               <option value="potato_early_blight">Early blight</option>
             </select>
           </div>
-          <label className="inline" style={{ marginTop: 18, cursor: 'pointer' }}>
+          <label className="check">
             <input
               type="checkbox"
-              style={{ width: 'auto' }}
               checked={showTraps}
               onChange={(e) => setShowTraps(e.target.checked)}
             />
@@ -88,7 +87,7 @@ export default function MapPage() {
             </span>
           ))}
           <span className="muted small">
-            {data ? `${data.total_confirmed} confirmed · ${data.total_unverified} pending review` : ''}
+            {data ? `${data.total_confirmed} confirmed · ${data.total_unverified} pending` : ''}
           </span>
         </div>
       </div>
@@ -158,13 +157,13 @@ export default function MapPage() {
                 }}
               >
                 <Popup>
-                  <strong>Pest traps — {trap.district || 'unknown'}</strong>
+                  <strong>Pest traps: {trap.district || 'unknown'}</strong>
                   <br />
                   {trap.devices} device(s), {trap.readings} readings
                   <br />
                   Mean catch: <strong>{trap.mean_value}</strong> (max {trap.max_value})
                   <br />
-                  {trap.mean_value >= 20 ? 'Above the action threshold of 20/trap/week.' : 'Below the action threshold.'}
+                  {trap.mean_value >= 20 ? 'Above the action threshold of 20 per trap per week.' : 'Below the action threshold.'}
                 </Popup>
               </CircleMarker>
             ))}
@@ -173,8 +172,8 @@ export default function MapPage() {
 
       {cells.length === 0 && !error && (
         <p className="muted" style={{ marginTop: 12 }}>
-          No cases with coordinates in this window. Run{' '}
-          <span className="mono">python scripts/seed_demo_data.py</span> to populate a demo month.
+          No cases with coordinates in this period. Run{' '}
+          <span className="mono">python scripts/seed_demo_data.py</span> for demo data.
         </p>
       )}
     </main>

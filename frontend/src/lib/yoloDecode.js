@@ -31,7 +31,7 @@ export function letterboxParams(srcWidth, srcHeight, size = 640) {
  * Orient raw output to [numAnchors][4 + numClasses].
  *
  * Ultralytics emits (1, 4+nc, N); some export toolchains emit (1, N, 4+nc).
- * Match on the known class count first — guessing from which dimension is
+ * Match on the known class count first, guessing from which dimension is
  * larger silently mislabels everything if a model returns few anchors.
  */
 export function orient(data, dims, numClasses) {

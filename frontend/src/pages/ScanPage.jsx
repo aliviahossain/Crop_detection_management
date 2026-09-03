@@ -8,7 +8,7 @@ import { assessFrame, hintFor } from '../lib/frameQuality.js'
 import AdvisoryCard from '../components/AdvisoryCard.jsx'
 
 // 4 fps. Fast enough to feel live, slow enough that a mid-range phone is not
-// pinned at 100% CPU — which drains the battery and heats the device in a field.
+// pinned at 100% CPU, which drains the battery and heats the device in a field.
 const TARGET_FPS = 4
 const QUALITY_CANVAS = 96
 
@@ -118,7 +118,7 @@ export default function ScanPage() {
         const width = video.videoWidth
         const height = video.videoHeight
 
-        // Quality gate on a small copy — cheap, and it runs every frame.
+        // Quality gate on a small copy, cheap, and it runs every frame.
         if (!qualityCanvasRef.current) {
           qualityCanvasRef.current = document.createElement('canvas')
           qualityCanvasRef.current.width = QUALITY_CANVAS
@@ -251,11 +251,9 @@ export default function ScanPage() {
           <strong>{t('scan.noModel')}</strong>
           {modeNote && <div className="small">{modeNote}</div>}
           <div className="small" style={{ marginTop: 6 }}>
-            You can still capture a photo on the{' '}
-            <a href="#/check" onClick={() => navigate('/check')}>
-              Check crop
-            </a>{' '}
-            page — it goes to the expert review queue.
+            <a href="/check" onClick={(e) => { e.preventDefault(); navigate('/check') }}>
+              {t('scan.noModelHelp')}
+            </a>
           </div>
         </div>
       )}
@@ -267,9 +265,7 @@ export default function ScanPage() {
               <h2 style={{ margin: 0 }}>{t('scan.accepted')}</h2>
               <span className="badge brand">#{accepted.case_id}</span>
             </div>
-            <div style={{ fontSize: 20, fontWeight: 600 }}>
-              {accepted.predicted_display || t('scan.noDetection')}
-            </div>
+            <div className="headline">{accepted.predicted_display || t('scan.noDetection')}</div>
             {accepted.confidence != null && (
               <div className="muted">
                 {t('result.confidence')}: {Math.round(accepted.confidence * 100)}%
@@ -277,8 +273,7 @@ export default function ScanPage() {
             )}
             <div className="inline">
               <button
-                className="primary"
-                style={{ width: 'auto' }}
+                className="primary auto"
                 onClick={() => {
                   setAccepted(null)
                   startCamera()
@@ -337,8 +332,7 @@ export default function ScanPage() {
                 </button>
               ) : (
                 <button
-                  className="primary"
-                  style={{ width: 'auto' }}
+                  className="primary auto"
                   onClick={startCamera}
                   disabled={cameraState === 'starting'}
                 >
@@ -380,9 +374,7 @@ export default function ScanPage() {
               {stable && (
                 <>
                   <div className="spread">
-                    <div style={{ fontSize: 22, fontWeight: 650 }}>
-                      {verdictLabel || t('scan.noDetection')}
-                    </div>
+                    <div className="headline">{verdictLabel || t('scan.noDetection')}</div>
                     <span className={`badge ${tone}`}>
                       {Math.round((verdict.confidence || 0) * 100)}%
                     </span>
@@ -395,8 +387,7 @@ export default function ScanPage() {
 
                   <div className="inline">
                     <button
-                      className="primary"
-                      style={{ width: 'auto' }}
+                      className="primary auto"
                       onClick={accept}
                       disabled={submitting}
                     >

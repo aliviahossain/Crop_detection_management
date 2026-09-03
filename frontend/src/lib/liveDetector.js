@@ -7,7 +7,7 @@
 //      the offline capability the problem statement rewards. The model is
 //      fetched once from /detect/model and cached by the browser.
 //   2. **Server /detect/frame.** Used when WASM cannot start (old browser) or
-//      the model has not been trained yet. Still stateless — no case, no
+//      the model has not been trained yet. Still stateless, no case, no
 //      advisory, no database write.
 //   3. **Nothing.** Reported honestly; the scanner still lets the farmer
 //      capture a photo and submit it through the normal /detect flow, which

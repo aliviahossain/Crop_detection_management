@@ -3,9 +3,9 @@ import { api, mediaUrl } from '../lib/api.js'
 import { prettify, useT } from '../lib/i18n.js'
 
 const CLASSES = [
-  { key: 'potato_early_blight', label: 'Potato — Early Blight' },
-  { key: 'potato_late_blight', label: 'Potato — Late Blight' },
-  { key: 'potato_healthy', label: 'Potato — Healthy' },
+  { key: 'potato_early_blight', label: 'Early blight' },
+  { key: 'potato_late_blight', label: 'Late blight' },
+  { key: 'potato_healthy', label: 'Healthy' },
 ]
 
 export default function ReviewPage() {
@@ -42,7 +42,7 @@ export default function ReviewPage() {
   const decide = async (status) => {
     if (!selected) return
     if (!reviewer.trim()) {
-      setError('Enter your name or designation — a decision has to be attributable.')
+      setError('Enter your name or post. A decision has to be attributable.')
       return
     }
     setBusy(true)
@@ -70,8 +70,8 @@ export default function ReviewPage() {
     <main className="page">
       <h1>{t('nav.review')}</h1>
       <p className="lede">
-        Confirm, correct or reject each AI diagnosis. Your decision sets the authoritative label
-        used by the hotspot map and dashboard, and becomes a training sample for the next model.
+        Your decision becomes the official label on the map and dashboard, and a training sample
+        for the next model.
       </p>
 
       {message && <div className="alert info">{message}</div>}
@@ -81,10 +81,9 @@ export default function ReviewPage() {
         <div className="card">
           <div className="spread" style={{ marginBottom: 10 }}>
             <h2 style={{ margin: 0 }}>Queue ({queue.length})</h2>
-            <label className="inline small" style={{ margin: 0, cursor: 'pointer' }}>
+            <label className="check small">
               <input
                 type="checkbox"
-                style={{ width: 'auto' }}
                 checked={onlyEscalated}
                 onChange={(e) => setOnlyEscalated(e.target.checked)}
               />
@@ -94,17 +93,11 @@ export default function ReviewPage() {
 
           {queue.length === 0 && <p className="muted">Queue is empty.</p>}
 
-          <div className="stack" style={{ maxHeight: 620, overflowY: 'auto' }}>
+          <div className="queue">
             {queue.map((row) => (
               <button
                 key={row.id}
-                className="ghost"
-                style={{
-                  textAlign: 'left',
-                  width: '100%',
-                  borderColor: selected?.id === row.id ? 'var(--brand)' : 'var(--line)',
-                  background: selected?.id === row.id ? 'var(--brand-soft)' : 'transparent',
-                }}
+                className={`queue-item${selected?.id === row.id ? ' active' : ''}`}
                 onClick={() => setSelected(row)}
               >
                 <div className="spread">
@@ -141,7 +134,7 @@ export default function ReviewPage() {
                   <img src={image} alt={`case ${selected.id}`} style={{ maxWidth: '100%', borderRadius: 10 }} />
                 ) : (
                   <p className="muted small">
-                    No image on this case{selected.source === 'risk_forecast' ? ' — it was a proactive weather-based alert.' : '.'}
+                    No image on this case{selected.source === 'risk_forecast' ? '. It was a weather alert, not a photo.' : '.'}
                   </p>
                 )}
 
@@ -150,7 +143,7 @@ export default function ReviewPage() {
                     <tr>
                       <th>Model says</th>
                       <td>
-                        {selected.predicted_class ? prettify(selected.predicted_class) : '—'}
+                        {selected.predicted_class ? prettify(selected.predicted_class) : '-'}
                         {selected.confidence != null && ` (${Math.round(selected.confidence * 100)}%)`}
                       </td>
                     </tr>
@@ -165,7 +158,7 @@ export default function ReviewPage() {
                     <tr>
                       <th>Location</th>
                       <td>
-                        {[selected.village, selected.district].filter(Boolean).join(', ') || '—'}
+                        {[selected.village, selected.district].filter(Boolean).join(', ') || '-'}
                         {selected.latitude != null && (
                           <span className="mono small">
                             {' '}
@@ -198,7 +191,7 @@ export default function ReviewPage() {
               <div className="card stack">
                 <h2>Your decision</h2>
                 <div className="field">
-                  <label>Reviewer (name or designation)</label>
+                  <label>Your name or post</label>
                   <input
                     value={reviewer}
                     onChange={(e) => setReviewer(e.target.value)}
@@ -206,9 +199,9 @@ export default function ReviewPage() {
                   />
                 </div>
                 <div className="field">
-                  <label>Correct diagnosis (used when correcting)</label>
+                  <label>Correct diagnosis</label>
                   <select value={correctedClass} onChange={(e) => setCorrectedClass(e.target.value)}>
-                    <option value="">—</option>
+                    <option value="">-</option>
                     {CLASSES.map((c) => (
                       <option key={c.key} value={c.key}>
                         {c.label}
@@ -227,7 +220,7 @@ export default function ReviewPage() {
                 </div>
 
                 <div className="inline">
-                  <button className="primary" style={{ width: 'auto' }} disabled={busy} onClick={() => decide('confirmed')}>
+                  <button className="primary auto" disabled={busy} onClick={() => decide('confirmed')}>
                     ✓ Confirm
                   </button>
                   <button className="ghost" disabled={busy || !correctedClass} onClick={() => decide('corrected')}>
@@ -239,9 +232,8 @@ export default function ReviewPage() {
                 </div>
 
                 <p className="muted small">
-                  Reject when the true diagnosis is outside the three potato classes this model
-                  covers — record what it actually was in the notes so it can inform the next
-                  dataset.
+                  Reject when the real diagnosis is outside the three classes this model covers.
+                  Note what it actually was, so the next dataset can include it.
                 </p>
               </div>
             </>

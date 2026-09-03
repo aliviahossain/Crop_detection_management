@@ -74,24 +74,24 @@ export default function DashboardPage() {
     <main className="page">
       <h1>{t('nav.dashboard')}</h1>
       <p className="lede">
-        Aggregate view for agriculture officials — where pressure is building, whether the model is
-        still trustworthy, and whether advisories are actually resolving cases.
+        Where pressure is building, whether the model still holds up, and whether advice is
+        resolving cases.
       </p>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="inline">
+        <div className="filters">
           <div>
-            <label>Window</label>
+            <label>{t('common.window')}</label>
             <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
-              <option value={7}>Last 7 days</option>
-              <option value={30}>Last 30 days</option>
-              <option value={90}>Last 90 days</option>
+              <option value={7}>{t('common.days7')}</option>
+              <option value={30}>{t('common.days30')}</option>
+              <option value={90}>{t('common.days90')}</option>
             </select>
           </div>
           <div>
-            <label>District</label>
+            <label>{t('field.district')}</label>
             <select value={district} onChange={(e) => setDistrict(e.target.value)}>
-              <option value="">All districts</option>
+              <option value="">{t('common.allDistricts')}</option>
               {districts.map((d) => (
                 <option key={d.district} value={d.district}>
                   {d.district} ({d.cases})
@@ -106,23 +106,23 @@ export default function DashboardPage() {
         <Stat value={c.total} label="Cases logged" hint={`${c.from_image} from photos, ${c.proactive_risk_only} proactive`} />
         <Stat
           value={c.escalated}
-          label="Escalated to an expert"
+          label="Sent to an expert"
           hint={c.escalation_rate != null ? `${Math.round(c.escalation_rate * 100)}% of all cases` : ''}
           tone="high"
         />
-        <Stat value={c.pending_review} label="Awaiting review" hint="Expert validation queue" tone="medium" />
+        <Stat value={c.pending_review} label="Awaiting review" hint="In the expert queue" tone="medium" />
         <Stat
-          value={accuracy?.field_accuracy != null ? `${Math.round(accuracy.field_accuracy * 100)}%` : '—'}
-          label="Field-validated accuracy"
+          value={accuracy?.field_accuracy != null ? `${Math.round(accuracy.field_accuracy * 100)}%` : '-'}
+          label="Accuracy in the field"
           hint={accuracy ? `${accuracy.reviewed} reviewed, ${accuracy.corrected} corrected` : ''}
         />
         <Stat
-          value={followUps?.improvement_rate != null ? `${Math.round(followUps.improvement_rate * 100)}%` : '—'}
+          value={followUps?.improvement_rate != null ? `${Math.round(followUps.improvement_rate * 100)}%` : '-'}
           label="Treatments that worked"
           hint={`${summary.follow_ups_overdue} follow-ups overdue`}
           tone="low"
         />
-        <Stat value={summary.active_sensor_devices} label="Active traps / sensors" hint="Reporting in this window" />
+        <Stat value={summary.active_sensor_devices} label="Active traps" hint="Reporting in this period" />
       </div>
 
       <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))' }}>
@@ -158,8 +158,7 @@ export default function DashboardPage() {
             </BarChart>
           </ResponsiveContainer>
           <p className="muted small">
-            Counts use the expert-confirmed label where a case has been reviewed, the model
-            prediction otherwise.
+            Reviewed cases count by the expert label, the rest by the model prediction.
           </p>
         </div>
 
@@ -173,7 +172,7 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-          <h3>Districts with high-risk cases</h3>
+          <h3>High-risk districts</h3>
           {summary.high_risk_districts.length === 0 && <p className="muted small">None in this window.</p>}
           <table>
             <tbody>
@@ -191,7 +190,7 @@ export default function DashboardPage() {
 
         <div className="card">
           <h2>Model accuracy by class</h2>
-          {!accuracy?.per_class?.length && <p className="muted small">No reviewed cases yet.</p>}
+          {!accuracy?.per_class?.length && <p className="muted small">{t('common.none')}</p>}
           <table>
             <thead>
               <tr>
@@ -209,7 +208,7 @@ export default function DashboardPage() {
                   <td>{row.confirmed}</td>
                   <td>
                     <span className={`badge ${row.accuracy >= 0.8 ? 'low' : row.accuracy >= 0.6 ? 'medium' : 'high'}`}>
-                      {row.accuracy != null ? `${Math.round(row.accuracy * 100)}%` : '—'}
+                      {row.accuracy != null ? `${Math.round(row.accuracy * 100)}%` : '-'}
                     </span>
                   </td>
                 </tr>
@@ -217,8 +216,8 @@ export default function DashboardPage() {
             </tbody>
           </table>
           <p className="muted small">
-            Measured against expert decisions in the field, not a held-out test split — this is the
-            number that tells you when a retrain is due.{' '}
+            Measured against expert decisions in the field, not a test split. This is the number
+            that tells you when a retrain is due.{' '}
             {accuracy?.retraining_samples_pending_export > 0 &&
               `${accuracy.retraining_samples_pending_export} validated samples are waiting for export.`}
           </p>

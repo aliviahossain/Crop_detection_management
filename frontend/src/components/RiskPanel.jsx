@@ -1,4 +1,4 @@
-import { prettify } from '../lib/i18n.js'
+import { prettify, useT } from '../lib/i18n.js'
 
 /**
  * Shows the risk assessment *with its evidence*. An extension officer has to be
@@ -7,13 +7,14 @@ import { prettify } from '../lib/i18n.js'
  * response.
  */
 export default function RiskPanel({ assessment, compact = false }) {
+  const t = useT()
   if (!assessment) return null
   const { threats = [], weather, weather_warnings: warnings = [], daily = [] } = assessment
 
   return (
     <div className="card stack">
       <div className="spread">
-        <h2 style={{ margin: 0 }}>Weather-based risk</h2>
+        <h2 style={{ margin: 0 }}>{t('risk.heading')}</h2>
         <span className={`badge ${assessment.overall_level}`}>
           {assessment.overall_level?.toUpperCase()} · {Math.round(assessment.overall_score * 100)}%
         </span>
@@ -21,8 +22,8 @@ export default function RiskPanel({ assessment, compact = false }) {
 
       {weather && (
         <p className="muted small">
-          {weather.hours}h of weather · {weather.temp_min_c}–{weather.temp_max_c} °C · mean RH{' '}
-          {weather.humidity_mean}% · rainfall {weather.rainfall_total_mm} mm ·{' '}
+          {weather.hours}h · {weather.temp_min_c} to {weather.temp_max_c} °C · RH{' '}
+          {weather.humidity_mean}% · rain {weather.rainfall_total_mm} mm ·{' '}
           <span className={`badge ${weather.synthetic ? 'medium' : 'low'}`}>
             {weather.synthetic ? 'synthetic feed' : weather.source}
           </span>
@@ -75,12 +76,12 @@ export default function RiskPanel({ assessment, compact = false }) {
 
               {threat.drivers?.length > 0 && (
                 <>
-                  <h3>Field context that changed this score</h3>
+                  <h3>What changed this score</h3>
                   <ul>
                     {threat.drivers.map((d, i) => (
                       <li key={i} className="small">
                         <strong>{prettify(d.factor)}</strong>{' '}
-                        {d.multiplier != null ? `×${d.multiplier}` : `+${d.added}`} — {d.why}
+                        {d.multiplier != null ? `×${d.multiplier}` : `+${d.added}`}: {d.why}
                       </li>
                     ))}
                   </ul>
@@ -89,7 +90,7 @@ export default function RiskPanel({ assessment, compact = false }) {
 
               {threat.secondary_layer && (
                 <p className="muted small">
-                  Secondary XGBoost layer:{' '}
+                  XGBoost layer:{' '}
                   {threat.secondary_layer.active
                     ? `adjusted by ${threat.secondary_layer.adjustment}`
                     : threat.secondary_layer.reason}
@@ -102,7 +103,7 @@ export default function RiskPanel({ assessment, compact = false }) {
 
       {!compact && daily.length > 0 && (
         <details>
-          <summary>Daily weather behind these models</summary>
+          <summary>Daily weather</summary>
           <div className="table-scroll">
             <table>
               <thead>

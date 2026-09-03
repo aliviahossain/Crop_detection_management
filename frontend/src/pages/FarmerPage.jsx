@@ -5,13 +5,12 @@ import AdvisoryCard from '../components/AdvisoryCard.jsx'
 import RiskPanel from '../components/RiskPanel.jsx'
 import FieldContextForm, { emptyContext } from '../components/FieldContextForm.jsx'
 
-/** Draws the model's bounding boxes over the farmer's own photo, so the
- *  diagnosis points at the lesion it actually saw rather than being a bare
- *  label the farmer has to take on trust. */
+/** Draws the model's boxes over the farmer's own photo, so the diagnosis points
+ *  at the lesion it actually saw instead of being a label taken on trust. */
 function DetectionPreview({ src, detections }) {
   return (
     <div className="preview">
-      <img src={src} alt="uploaded crop" />
+      <img src={src} alt="crop" />
       {detections.map((d, i) => {
         const [x1, y1, x2, y2] = d.bbox_norm
         return (
@@ -90,26 +89,34 @@ export default function FarmerPage() {
       <p className="lede">{t('farmer.help')}</p>
 
       <div className="grid two">
-        <form className="card" onSubmit={submit}>
-          <div className="field">
-            <label>{t('farmer.choose')}</label>
+        <form className="card stack" onSubmit={submit}>
+          <label className="file-drop">
+            <span className="ico" aria-hidden="true">
+              📷
+            </span>
+            <b>{file ? file.name : t('farmer.choose')}</b>
+            <small>{t('farmer.tapPhoto')}</small>
             <input type="file" accept="image/*" capture="environment" onChange={pick} />
-          </div>
+          </label>
 
           {previewUrl && !result && (
-            <div className="field">
-              <img src={previewUrl} alt="preview" style={{ maxWidth: '100%', borderRadius: 10 }} />
-            </div>
+            <img src={previewUrl} alt="" style={{ maxWidth: '100%', borderRadius: 10 }} />
           )}
 
-          <FieldContextForm value={ctx} onChange={setCtx} showPersonal />
+          <details>
+            <summary>{t('farmer.details')}</summary>
+            <p className="muted small" style={{ marginTop: 6 }}>
+              {t('farmer.detailsHelp')}
+            </p>
+            <FieldContextForm value={ctx} onChange={setCtx} showPersonal />
+          </details>
 
           <button className="primary" type="submit" disabled={!file || busy}>
             {busy ? t('farmer.analysing') : t('farmer.submit')}
           </button>
 
           {result && (
-            <button type="button" className="ghost" style={{ marginTop: 10 }} onClick={reset}>
+            <button type="button" className="ghost" onClick={reset}>
               {t('result.newCheck')}
             </button>
           )}
@@ -118,12 +125,7 @@ export default function FarmerPage() {
         </form>
 
         <div className="stack">
-          {!result && (
-            <div className="card muted">
-              Upload a photo to get a diagnosis, an IPDM advisory in your language, and a
-              weather-based risk forecast for your field.
-            </div>
-          )}
+          {!result && <div className="card muted">{t('farmer.waiting')}</div>}
 
           {result && (
             <>
@@ -133,30 +135,26 @@ export default function FarmerPage() {
                   {result.escalate || result.triage?.escalate ? (
                     <span className="badge high">{t('result.escalated')}</span>
                   ) : (
-                    <span className="badge low">Confident</span>
+                    <span className="badge low">{t('result.confident')}</span>
                   )}
                 </div>
 
                 {result.model_available ? (
                   <>
-                    <div style={{ fontSize: 20, fontWeight: 600 }}>
-                      {result.predicted_display || 'No symptom detected'}
+                    <div className="headline">
+                      {result.predicted_display || t('result.nothing')}
                     </div>
                     {result.confidence != null && (
                       <div className="muted">
                         {t('result.confidence')}: {Math.round(result.confidence * 100)}%
                         {result.model_version && (
-                          <span className="mono small"> · {result.model_version}</span>
+                          <span className="mono small"> {result.model_version}</span>
                         )}
                       </div>
                     )}
                   </>
                 ) : (
-                  <div className="alert danger">
-                    No trained detector is installed on this deployment, so no automated diagnosis
-                    was made. The case has been sent to the expert review queue rather than
-                    guessed.
-                  </div>
+                  <div className="alert danger">{t('farmer.noModel')}</div>
                 )}
 
                 {result.note && <p className="muted small">{result.note}</p>}
@@ -170,8 +168,7 @@ export default function FarmerPage() {
               {result.risk && <RiskPanel assessment={result.risk} />}
 
               <p className="muted small">
-                Case #{result.case_id} recorded. It now appears on the officer dashboard and, once
-                an extension officer confirms it, contributes to the district hotspot map.
+                {t('farmer.saved').replace('{id}', result.case_id)}
               </p>
             </>
           )}

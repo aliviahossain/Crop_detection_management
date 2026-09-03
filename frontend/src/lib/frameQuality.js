@@ -72,22 +72,22 @@ export function assessFrame(imageData, options = {}) {
 /** Actionable guidance, not diagnostics -- the farmer has to know what to do. */
 export const QUALITY_HINTS = {
   too_dark: {
-    en: 'Too dark — move into better light',
-    mr: 'खूप अंधार — उजेडात या',
-    hi: 'बहुत अंधेरा — बेहतर रोशनी में आएँ',
-    bn: 'খুব অন্ধকার — ভালো আলোয় আসুন',
+    en: 'Too dark. Move into better light',
+    mr: 'खूप अंधार. उजेडात या',
+    hi: 'बहुत अंधेरा. बेहतर रोशनी में आएँ',
+    bn: 'খুব অন্ধকার. ভালো আলোয় আসুন',
   },
   too_bright: {
-    en: 'Too bright — avoid direct glare',
-    mr: 'खूप प्रखर प्रकाश — थेट उन्हात नको',
-    hi: 'बहुत तेज़ रोशनी — सीधी चमक से बचें',
-    bn: 'খুব উজ্জ্বল — সরাসরি ঝলকানি এড়ান',
+    en: 'Too bright. Avoid direct glare',
+    mr: 'खूप प्रखर प्रकाश. थेट उन्हात नको',
+    hi: 'बहुत तेज़ रोशनी. सीधी चमक से बचें',
+    bn: 'খুব উজ্জ্বল. সরাসরি ঝলকানি এড়ান',
   },
   too_blurry: {
-    en: 'Hold steady — image is blurred',
-    mr: 'स्थिर धरा — चित्र अस्पष्ट आहे',
-    hi: 'स्थिर रखें — तस्वीर धुंधली है',
-    bn: 'স্থির রাখুন — ছবি ঝাপসা',
+    en: 'Image is blurred. Hold still',
+    mr: 'चित्र अस्पष्ट आहे. स्थिर धरा',
+    hi: 'तस्वीर धुंधली है. स्थिर रखें',
+    bn: 'ছবি ঝাপসা. স্থির রাখুন',
   },
 }
 

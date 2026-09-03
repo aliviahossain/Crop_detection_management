@@ -1,24 +1,39 @@
+import { useState } from 'react'
 import { SOIL_OPTIONS, STAGE_OPTIONS, VARIETY_OPTIONS, prettify, useT } from '../lib/i18n.js'
 
 /**
- * Crop stage, variety and soil are not decoration -- the risk engine multiplies
- * the agronomic score by each of them. Collecting them here is what turns a
- * generic weather forecast into a farm-level one.
+ * Crop stage, variety and soil are not decoration. The risk engine multiplies
+ * the agronomic score by each of them, which is what turns a generic weather
+ * forecast into a farm-level one.
  */
 export default function FieldContextForm({ value, onChange, showPersonal = false }) {
   const t = useT()
+  const [locating, setLocating] = useState(false)
+  const [locateError, setLocateError] = useState(false)
   const set = (key) => (event) => onChange({ ...value, [key]: event.target.value })
 
+  // Silent failure here strands the farmer on a form that will not submit, so
+  // the button reports both states.
   const locate = () => {
-    if (!navigator.geolocation) return
+    if (!navigator.geolocation) {
+      setLocateError(true)
+      return
+    }
+    setLocating(true)
+    setLocateError(false)
     navigator.geolocation.getCurrentPosition(
-      (pos) =>
+      (pos) => {
+        setLocating(false)
         onChange({
           ...value,
           latitude: pos.coords.latitude.toFixed(5),
           longitude: pos.coords.longitude.toFixed(5),
-        }),
-      () => {},
+        })
+      },
+      () => {
+        setLocating(false)
+        setLocateError(true)
+      },
       { enableHighAccuracy: true, timeout: 8000 },
     )
   }
@@ -31,9 +46,16 @@ export default function FieldContextForm({ value, onChange, showPersonal = false
           <input placeholder="latitude" value={value.latitude} onChange={set('latitude')} />
           <input placeholder="longitude" value={value.longitude} onChange={set('longitude')} />
         </div>
-        <button type="button" className="ghost small" style={{ marginTop: 6 }} onClick={locate}>
-          📍 {t('field.locate')}
+        <button
+          type="button"
+          className="ghost small"
+          style={{ marginTop: 8 }}
+          onClick={locate}
+          disabled={locating}
+        >
+          📍 {locating ? t('field.locating') : t('field.locate')}
         </button>
+        {locateError && <p className="small muted">{t('field.locateFailed')}</p>}
       </div>
 
       <div className="row">
@@ -50,7 +72,7 @@ export default function FieldContextForm({ value, onChange, showPersonal = false
       <div className="field">
         <label>{t('field.variety')}</label>
         <select value={value.variety} onChange={set('variety')}>
-          <option value="">—</option>
+          <option value="">{t('common.optional')}</option>
           {VARIETY_OPTIONS.map((v) => (
             <option key={v} value={v}>
               {v}
@@ -63,7 +85,7 @@ export default function FieldContextForm({ value, onChange, showPersonal = false
         <div className="field">
           <label>{t('field.stage')}</label>
           <select value={value.crop_stage} onChange={set('crop_stage')}>
-            <option value="">—</option>
+            <option value="">{t('common.optional')}</option>
             {STAGE_OPTIONS.map((s) => (
               <option key={s} value={s}>
                 {prettify(s)}
@@ -74,7 +96,7 @@ export default function FieldContextForm({ value, onChange, showPersonal = false
         <div className="field">
           <label>{t('field.soil')}</label>
           <select value={value.soil_condition} onChange={set('soil_condition')}>
-            <option value="">—</option>
+            <option value="">{t('common.optional')}</option>
             {SOIL_OPTIONS.map((s) => (
               <option key={s} value={s}>
                 {prettify(s)}
@@ -97,7 +119,7 @@ export default function FieldContextForm({ value, onChange, showPersonal = false
               <label>
                 {t('field.phone')} <span className="muted">({t('common.optional')})</span>
               </label>
-              <input value={value.phone} onChange={set('phone')} />
+              <input value={value.phone} onChange={set('phone')} inputMode="tel" />
             </div>
           </div>
           <div className="field">
