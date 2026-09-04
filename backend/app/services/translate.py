@@ -376,23 +376,42 @@ def translate_free_text(text: str, lang: str) -> tuple[str, bool]:
     if not settings.llm_enabled:
         return text, False
     try:
-        import anthropic
+        import httpx
 
-        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
         target = {"mr": "Marathi", "hi": "Hindi", "bn": "Bengali"}.get(lang, lang)
-        msg = client.messages.create(
-            model=settings.advisory_llm_model,
-            max_tokens=1500,
-            system=(
-                "You translate Indian agricultural extension advisories. Translate into "
-                f"{target} using the vocabulary a Krishi Sahayak would use with a farmer. "
-                "Keep every number, dose, chemical name, product concentration and phone "
-                "number exactly as written in the source, in Latin script. Do not add, remove "
-                "or soften any safety instruction. Output only the translation."
-            ),
-            messages=[{"role": "user", "content": text}],
+        system_text = (
+            "You translate Indian agricultural extension advisories. Translate into "
+            f"{target} using the vocabulary a Krishi Sahayak would use with a farmer. "
+            "Keep every number, dose, chemical name, product concentration and phone "
+            "number exactly as written in the source, in Latin script. Do not add, remove "
+            "or soften any safety instruction. Output only the translation."
         )
-        return "".join(b.text for b in msg.content if b.type == "text").strip(), True
+        url = (
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{settings.advisory_llm_model}:generateContent"
+        )
+        payload = {
+            "systemInstruction": {"parts": [{"text": system_text}]},
+            "contents": [{"role": "user", "parts": [{"text": text}]}],
+            # Low temperature: this is a faithful translation, not a rewrite.
+            "generationConfig": {"temperature": 0.2, "maxOutputTokens": 1500},
+        }
+        with httpx.Client(timeout=20.0) as client:
+            resp = client.post(
+                url,
+                params={"key": settings.gemini_api_key},
+                json=payload,
+                headers={"Content-Type": "application/json"},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+        candidates = data.get("candidates") or []
+        parts = (candidates[0].get("content") or {}).get("parts") or [] if candidates else []
+        translated = "".join(p.get("text", "") for p in parts).strip()
+        if translated:
+            return translated, True
+        log.warning("Gemini translation returned no text; returning English")
+        return text, False
     except Exception as exc:
         log.warning("LLM translation failed (%s); returning English text", exc)
         return text, False

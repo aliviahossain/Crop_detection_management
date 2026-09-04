@@ -33,14 +33,16 @@ class Settings(BaseSettings):
     weather_provider: str = "openweathermap"
     weather_cache_ttl_seconds: int = 1800
 
-    # Advisory
+    # Advisory. Free-text KB excerpts are translated by Gemini (same key as the
+    # assistant chatbot); anthropic_api_key is kept for backward compatibility
+    # but is no longer used.
     chroma_dir: Path = REPO_ROOT / "backend" / "app" / "data" / "chroma"
     kb_dir: Path = REPO_ROOT / "backend" / "app" / "data" / "kb"
     anthropic_api_key: str = ""
-    advisory_llm_model: str = "claude-sonnet-5"
+    advisory_llm_model: str = "gemini-2.5-flash"
 
-    # Assistant chatbot (Gemini). Leave the key blank to run a documented,
-    # offline canned-reply fallback; set it to enable live Gemini answers.
+    # Assistant chatbot + advisory translation (Gemini). Leave the key blank to
+    # run the documented offline fallbacks; set it to enable live Gemini answers.
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.5-flash"
 
@@ -54,7 +56,9 @@ class Settings(BaseSettings):
 
     @property
     def llm_enabled(self) -> bool:
-        return bool(self.anthropic_api_key)
+        # Advisory free-text translation now runs on Gemini, so it is enabled by
+        # the same key that powers the assistant chatbot.
+        return bool(self.gemini_api_key)
 
     @property
     def chat_enabled(self) -> bool:

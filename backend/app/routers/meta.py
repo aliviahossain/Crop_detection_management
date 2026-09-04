@@ -75,7 +75,7 @@ def health() -> dict:
                 "summary": "Advisories are assembled from the built-in translated message "
                 f"catalog ({', '.join(settings.languages)}), which is the intended default: "
                 "no API key, no network, no per-request cost.",
-                "remedy": "Optional. Set ANTHROPIC_API_KEY to also translate free-text "
+                "remedy": "Optional. Set GEMINI_API_KEY to also translate free-text "
                 "knowledge-base excerpts.",
             }
         )
