@@ -142,6 +142,7 @@ def main() -> int:
     ap.add_argument("--patience", type=int, default=25)
     ap.add_argument("--device", default=0, help="0 for the Kaggle GPU, 'cpu' to force CPU")
     ap.add_argument("--project", type=Path, default=Path("runs/potato"))
+    ap.add_argument("--lr0", type=float, default=0.01, help="Initial learning rate (use 0.001 for fine-tuning)")
     ap.add_argument("--name", default=None, help="Run name; defaults to <model>_3class_<epochs>e")
     ap.add_argument("--export-dir", type=Path, default=Path("ml/weights"))
     ap.add_argument("--no-export", action="store_true")
@@ -189,6 +190,7 @@ def main() -> int:
         pretrained=True,
         optimizer="auto",
         cos_lr=True,
+        lr0=args.lr0,
         # --- augmentation: geometry yes, colour sparingly ---
         hsv_h=0.010,   # hue is the diagnostic signal -- barely touch it
         hsv_s=0.5,
