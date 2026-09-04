@@ -18,14 +18,15 @@ separates this from a black box in evaluation.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from dataclasses import dataclass, field, replace
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import Case, ReviewStatus, RiskLevel, SensorReading
 from app.services import risk_models, taxonomy
+from app.services.risk_models import DaySummary
 from app.services.geo import geo_cell, haversine_km
 from app.services.risk_secondary import secondary_layer
 from app.services.weather import WeatherSeries, get_series
@@ -72,6 +73,35 @@ SOIL_FACTORS: dict[str, float] = {
 SOIL_DRAINAGE_INDEX = {
     "well_drained": 0.0, "sandy": 0.25, "normal": 0.5,
     "clay": 0.7, "poorly_drained": 0.85, "waterlogged": 1.0,
+}
+
+# ----------------------------------------------------------------------
+# EXPERIMENTAL: canopy airflow modifier
+# ----------------------------------------------------------------------
+# A coarse, relative in-field airflow level, measured passively from the live
+# scanner's video (see frontend/src/lib/canopyAirflow.js). It is NOT a
+# calibrated wind sensor.
+#
+# Rather than nudging the final score, airflow adjusts the *input the fungal
+# models actually care about*: leaf-wetness hours. Still air slows canopy drying
+# -> dew lingers -> more wet hours; a breeze does the opposite. Those wet hours
+# are what the Smith Period (>= 11 h) and TOMCAST (severity cut points) read, so
+# this is an agronomically real lever, not cosmetic. Smith/TOMCAST are
+# deterministic formulas -- we simply evaluate them a second time on the adjusted
+# day summaries; no model, no training, no extra artifact.
+#
+# Applies ONLY to the moisture-driven fungal blights (late/early), never pests,
+# and only to today + forecast days -- one scan cannot honestly rewrite last
+# week's observed humidity. The adjustment extends or trims dew only on days that
+# already had some (still air prolongs existing wetness; it does not invent dew
+# on a bone-dry day).
+#
+# Honesty guardrail (see _combine_airflow): airflow may freely RAISE concern, but
+# a breeze can never weaken a rule that already fired on the observed humidity.
+AIRFLOW_WETNESS_DELTA_HOURS: dict[str, int] = {
+    "still": 2,    # dew lingers -> add wet hours
+    "light": 0,    # neutral, but recorded so it is auditable
+    "breezy": -2,  # faster drying -> trim wet hours (pre-trigger only)
 }
 
 HISTORY_RADIUS_KM = 15.0
@@ -134,6 +164,9 @@ class RiskContext:
     variety: str | None = None
     soil_condition: str | None = None
     district: str | None = None
+    # EXPERIMENTAL: 'still' | 'light' | 'breezy' from the passive canopy-airflow
+    # estimate. None (the default) means no reading -> no effect at all.
+    airflow_level: str | None = None
 
 
 def _modifier(name: str, factor: float, why: str) -> dict:
@@ -238,6 +271,108 @@ def _apply_modifiers(base: float, ctx: RiskContext) -> tuple[float, list[dict]]:
     return score, drivers
 
 
+def _airflow_wetness_delta(airflow_level: str | None) -> int | None:
+    """Map an EXPERIMENTAL airflow level to a per-day leaf-wetness-hour delta.
+
+    Returns None for an absent or unrecognised level, so callers can skip all
+    airflow handling and leave the raw forecast untouched.
+    """
+    if not airflow_level:
+        return None
+    return AIRFLOW_WETNESS_DELTA_HOURS.get(airflow_level.strip().lower())
+
+
+def _adjust_days_for_airflow(
+    days: list[DaySummary], delta: int, today: date
+) -> list[DaySummary]:
+    """Apply the wetness-hour delta to today + forecast days that already had dew.
+
+    Past days are left as observed -- a single scan cannot rewrite last week's
+    humidity. Days with no wetness at all are untouched: still air prolongs
+    existing dew, it does not conjure dew where the canopy never approached
+    saturation (and there is no wetness-temperature to attribute new hours to).
+    """
+    if not delta:
+        return days
+    out: list[DaySummary] = []
+    for d in days:
+        if d.day >= today and d.wetness_mean_temp is not None:
+            new_wet = max(0, min(24, d.wetness_hours + delta))
+            out.append(replace(d, wetness_hours=new_wet, hours_rh_above_90=new_wet))
+        else:
+            out.append(d)
+    return out
+
+
+def _combine_airflow(
+    base_raw: float, base_adj: float, *, raw_triggered: bool
+) -> tuple[float, bool]:
+    """Merge the raw and airflow-adjusted base scores under the honesty rule.
+
+    Airflow may freely raise concern (still air), and may ease a *pre-threshold*
+    score (a breeze before conditions are met). But it must never weaken a rule
+    that already fired on the observed humidity: if the adjustment would lower an
+    already-triggered score, we keep the raw score and report it as suppressed.
+    """
+    if base_adj < base_raw and raw_triggered:
+        return base_raw, True
+    return base_adj, False
+
+
+def _airflow_driver(
+    level: str,
+    delta: int,
+    *,
+    suppressed: bool,
+    outcome_changed: bool,
+) -> dict:
+    """Auditable, clearly-experimental record of what airflow did (or didn't)."""
+    if suppressed:
+        why = (
+            f"Experimental in-field airflow read '{level}', which would ease fungal "
+            "pressure by trimming leaf-wetness hours. Suppressed: a published rule "
+            "already fired on the observed humidity, and an experimental signal does "
+            "not un-fire a met infection period."
+        )
+        effect = "neutral"
+    elif delta > 0:
+        why = (
+            f"Experimental in-field airflow read '{level}'. Calm air slows canopy "
+            f"drying, so leaf wetness was extended by ~{delta} h on today/forecast "
+            "days that already had dew"
+            + (
+                " -- enough to change a fungal model's outcome."
+                if outcome_changed
+                else ", raising fungal blight pressure."
+            )
+        )
+        effect = "increases"
+    elif delta < 0:
+        why = (
+            f"Experimental in-field airflow read '{level}'. Moving air dries the "
+            f"canopy faster, so leaf wetness was trimmed by ~{-delta} h on "
+            "today/forecast days, easing pre-threshold fungal pressure."
+        )
+        effect = "reduces"
+    else:  # light / delta == 0
+        why = (
+            "Experimental in-field airflow read 'light' -- recorded for transparency; "
+            "no material effect on leaf-wetness duration."
+        )
+        effect = "neutral"
+
+    return {
+        "factor": "airflow_experimental",
+        "experimental": True,
+        "measured_level": level,
+        "wetness_hours_delta": delta,
+        "applies_to": "today + forecast days with existing dew",
+        "effect": effect,
+        "changed_model_outcome": outcome_changed,
+        "why": why,
+    }
+
+
 def assess(
     db: Session | None,
     lat: float,
@@ -251,14 +386,47 @@ def assess(
     series = series or get_series(db, lat, lon, past_days=past_days, forecast_days=forecast_days)
     days = risk_models.summarise_days(series.points)
 
+    # EXPERIMENTAL: an in-field airflow reading adjusts leaf-wetness hours on
+    # today + forecast days, then the deterministic fungal models are simply
+    # re-evaluated on those adjusted days. None -> no reading -> raw days only.
+    airflow_delta = _airflow_wetness_delta(ctx.airflow_level)
+    today = datetime.now(timezone.utc).date()
+    adj_days = (
+        _adjust_days_for_airflow(days, airflow_delta, today)
+        if airflow_delta is not None
+        else days
+    )
+
     threats: list[ThreatRisk] = []
 
     # ---------------- Late blight ----------------
     smith = risk_models.smith_period(days)
     beaumont = risk_models.beaumont_period(series.points)
     # Smith is the decision model; Beaumont is the earlier, looser warning.
-    lb_base = max(smith.score, beaumont.score * 0.7)
+    lb_base_raw = max(smith.score, beaumont.score * 0.7)
+
+    # Re-run the wetness-driven model on the airflow-adjusted days and merge
+    # under the honesty rule. Beaumont reads hourly points, not daily wetness
+    # hours, so it is left on the observed data.
+    lb_base = lb_base_raw
+    lb_airflow_driver: dict | None = None
+    smith_adj = smith
+    if airflow_delta is not None:
+        smith_adj = risk_models.smith_period(adj_days)
+        lb_base_adj = max(smith_adj.score, beaumont.score * 0.7)
+        lb_base, suppressed = _combine_airflow(
+            lb_base_raw, lb_base_adj, raw_triggered=smith.triggered or beaumont.triggered
+        )
+        lb_airflow_driver = _airflow_driver(
+            (ctx.airflow_level or "").strip().lower(),
+            airflow_delta,
+            suppressed=suppressed,
+            outcome_changed=smith_adj.triggered != smith.triggered,
+        )
+
     lb_score, lb_drivers = _apply_modifiers(lb_base, ctx)
+    if lb_airflow_driver is not None:
+        lb_drivers.append(lb_airflow_driver)
 
     hist_n, hist_sample = _local_history(db, lat, lon, "potato_late_blight")
     if hist_n:
@@ -315,7 +483,27 @@ def assess(
 
     # ---------------- Early blight ----------------
     dsv = risk_models.tomcast_dsv(days)
-    eb_score, eb_drivers = _apply_modifiers(dsv.score, ctx)
+
+    # EXPERIMENTAL airflow: re-run TOMCAST on the wetness-adjusted days, merged
+    # under the same honesty rule that a breeze cannot un-fire a met threshold.
+    eb_base = dsv.score
+    eb_airflow_driver: dict | None = None
+    dsv_adj = dsv
+    if airflow_delta is not None:
+        dsv_adj = risk_models.tomcast_dsv(adj_days)
+        eb_base, suppressed = _combine_airflow(
+            dsv.score, dsv_adj.score, raw_triggered=dsv.triggered
+        )
+        eb_airflow_driver = _airflow_driver(
+            (ctx.airflow_level or "").strip().lower(),
+            airflow_delta,
+            suppressed=suppressed,
+            outcome_changed=dsv_adj.triggered != dsv.triggered,
+        )
+
+    eb_score, eb_drivers = _apply_modifiers(eb_base, ctx)
+    if eb_airflow_driver is not None:
+        eb_drivers.append(eb_airflow_driver)
     hist_n_eb, hist_sample_eb = _local_history(db, lat, lon, "potato_early_blight")
     if hist_n_eb:
         bump = min(HISTORY_CAP, hist_n_eb * HISTORY_WEIGHT)

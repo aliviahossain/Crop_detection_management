@@ -220,6 +220,99 @@ class TestRisk:
         assert data["secondary"]["active"] is False  # no historical data shipped
 
 
+class TestCanopyAirflow:
+    """EXPERIMENTAL canopy-airflow modifier -- it adjusts leaf-wetness hours and
+    the deterministic fungal models are re-evaluated on the adjusted days.
+
+    The make-or-break honesty rule is tested directly: a breeze may soften a
+    warning before conditions are met, but must NEVER un-fire a rule that already
+    fired on the observed humidity, and an absent/unknown reading is neutral.
+    """
+
+    def test_level_maps_to_a_wetness_hour_delta(self):
+        from app.services.risk_engine import _airflow_wetness_delta
+
+        assert _airflow_wetness_delta("still") > 0
+        assert _airflow_wetness_delta("light") == 0
+        assert _airflow_wetness_delta("breezy") < 0
+        # Absent or unrecognised -> None, so the caller skips airflow entirely.
+        for bad in (None, "", "gale", "hurricane"):
+            assert _airflow_wetness_delta(bad) is None
+
+    def test_adjustment_touches_only_forecast_days_with_existing_dew(self):
+        from datetime import date, timedelta
+
+        from app.services.risk_engine import _adjust_days_for_airflow
+        from app.services.risk_models import DaySummary
+
+        today = date(2026, 9, 4)
+
+        def day(d, wet, wet_temp=18.0):
+            return DaySummary(
+                day=d, temp_min=12.0, temp_max=24.0, temp_mean=18.0, rh_mean=88.0,
+                hours_rh_above_90=wet, hours_rh_above_75=wet + 4, wetness_hours=wet,
+                wetness_mean_temp=wet_temp, rainfall_mm=0.0,
+            )
+
+        past = day(today - timedelta(days=2), 9)       # observed -> untouched
+        dry_future = day(today + timedelta(days=1), 0, None)  # no dew -> untouched
+        wet_future = day(today + timedelta(days=1), 9)  # today+ with dew -> adjusted
+
+        out = _adjust_days_for_airflow([past, dry_future, wet_future], 2, today)
+        assert out[0].wetness_hours == 9   # past unchanged
+        assert out[1].wetness_hours == 0   # dry day not invented into wetness
+        assert out[2].wetness_hours == 11  # forecast day with dew extended
+        assert out[2].hours_rh_above_90 == 11  # Smith reads this field too
+
+    def test_still_air_can_push_a_forecast_day_over_the_smith_threshold(self):
+        from datetime import date, timedelta
+
+        from app.services.risk_engine import _adjust_days_for_airflow
+        from app.services import risk_models
+
+        today = date(2026, 9, 4)
+
+        def qualifying_but_short(offset):
+            # Warm enough, and 10 wet hours -> one short of Smith's 11h line.
+            d = today + timedelta(days=offset)
+            return risk_models.DaySummary(
+                day=d, temp_min=12.0, temp_max=22.0, temp_mean=17.0, rh_mean=92.0,
+                hours_rh_above_90=10, hours_rh_above_75=14, wetness_hours=10,
+                wetness_mean_temp=15.0, rainfall_mm=0.0,
+            )
+
+        days = [qualifying_but_short(0), qualifying_but_short(1)]
+        assert risk_models.smith_period(days).triggered is False  # 10h < 11h
+        adj = _adjust_days_for_airflow(days, 2, today)  # still air -> +2h -> 12h
+        assert risk_models.smith_period(adj).triggered is True    # now a Smith Period
+
+    def test_combine_lets_airflow_raise_but_never_weaken_a_fired_rule(self):
+        from app.services.risk_engine import _combine_airflow
+
+        # Still air (adjusted > raw): always allowed, even if a rule fired.
+        assert _combine_airflow(0.5, 0.7, raw_triggered=True) == (0.7, False)
+        # Breeze before a rule fires (adjusted < raw, not triggered): eased.
+        assert _combine_airflow(0.5, 0.4, raw_triggered=False) == (0.4, False)
+        # Breeze once a rule HAS fired: suppressed, raw score kept.
+        assert _combine_airflow(0.8, 0.6, raw_triggered=True) == (0.8, True)
+
+    def test_airflow_surfaces_as_an_experimental_driver_over_the_api(self, client):
+        base = client.post("/risk", json={**PUNE, "include_advisory": False}).json()["assessment"]
+        still = client.post(
+            "/risk", json={**PUNE, "airflow_level": "still", "include_advisory": False}
+        ).json()["assessment"]
+
+        base_lb = next(t for t in base["threats"] if t["key"] == "potato_late_blight")
+        still_lb = next(t for t in still["threats"] if t["key"] == "potato_late_blight")
+
+        driver = next(d for d in still_lb["drivers"] if d["factor"] == "airflow_experimental")
+        assert driver["experimental"] is True
+        # Still air can only hold or raise fungal risk, never lower it.
+        assert still_lb["score"] >= base_lb["score"]
+        # And with no reading, no airflow driver is emitted at all.
+        assert not any(d["factor"] == "airflow_experimental" for d in base_lb["drivers"])
+
+
 class TestAdvisory:
     def test_late_blight_advisory_carries_doses_and_citations(self, client):
         body = client.post(

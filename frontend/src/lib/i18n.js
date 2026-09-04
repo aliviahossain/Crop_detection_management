@@ -316,6 +316,18 @@ const STRINGS = {
     hi: 'आप फसल जाँचें से फोटो भेज सकते हैं.',
     bn: 'আপনি ফসল দেখুন থেকে ছবি পাঠাতে পারেন.',
   },
+  'scan.airflow': { en: 'Airflow', mr: 'हवेची हालचाल', hi: 'हवा की गति', bn: 'বাতাসের চলাচল' },
+  'scan.airflow.tag': { en: 'experimental', mr: 'प्रायोगिक', hi: 'प्रायोगिक', bn: 'পরীক্ষামূলক' },
+  'scan.airflow.calibrating': { en: 'measuring…', mr: 'मोजत आहे…', hi: 'माप रहे हैं…', bn: 'মাপা হচ্ছে…' },
+  'scan.airflow.still': { en: 'Still', mr: 'शांत', hi: 'शांत', bn: 'স্থির' },
+  'scan.airflow.light': { en: 'Light', mr: 'हलकी', hi: 'हल्की', bn: 'হালকা' },
+  'scan.airflow.breezy': { en: 'Breezy', mr: 'वारेदार', hi: 'हवादार', bn: 'বাতাসী' },
+  'scan.airflow.explain': {
+    en: 'Rough in-field airflow from how leaves move between frames. Still air keeps leaves wet longer and raises blight risk. A relative hint, not a wind-speed sensor.',
+    mr: 'फ्रेममध्ये पाने कशी हलतात यावरून शेतातील अंदाजे हवा. शांत हवा पाने जास्त वेळ ओली ठेवते व करपा धोका वाढवते. हा सापेक्ष इशारा आहे, वाऱ्याचा वेग मोजणारे यंत्र नाही.',
+    hi: 'फ्रेम के बीच पत्तियों की हलचल से खेत की मोटी हवा का अंदाज़ा. शांत हवा पत्तियों को ज़्यादा देर गीला रखती है और झुलसा जोखिम बढ़ाती है. यह सापेक्ष संकेत है, हवा-गति सेंसर नहीं.',
+    bn: 'ফ্রেমের মধ্যে পাতা কীভাবে নড়ে তা থেকে জমির আনুমানিক বাতাস. স্থির বাতাস পাতা বেশিক্ষণ ভেজা রাখে ও ব্লাইট ঝুঁকি বাড়ায়. এটি আপেক্ষিক ইঙ্গিত, বাতাসের গতি মাপার যন্ত্র নয়.',
+  },
   'scan.howItWorks': { en: 'How this works', mr: 'हे कसे चालते', hi: 'यह कैसे काम करता है', bn: 'এটি কীভাবে কাজ করে' },
   'scan.how1': {
     en: 'Blurry or dark frames are thrown away first.',

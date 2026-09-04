@@ -5,6 +5,7 @@ import { useLang, useT } from '../lib/i18n.js'
 import { LiveDetector, MODE } from '../lib/liveDetector.js'
 import { STATUS, VerdictStabilizer } from '../lib/stabilizer.js'
 import { assessFrame, hintFor } from '../lib/frameQuality.js'
+import { CanopyAirflow } from '../lib/canopyAirflow.js'
 import { useVideoDevices } from '../lib/useVideoDevices.js'
 import AdvisoryCard from '../components/AdvisoryCard.jsx'
 
@@ -29,6 +30,7 @@ export default function ScanPage() {
   const qualityCanvasRef = useRef(null)
   const detectorRef = useRef(null)
   const stabilizerRef = useRef(new VerdictStabilizer())
+  const airflowRef = useRef(new CanopyAirflow())
   const loopRef = useRef(null)
   const busyRef = useRef(false)
 
@@ -40,6 +42,8 @@ export default function ScanPage() {
   const [modeNote, setModeNote] = useState(null)
   const [verdict, setVerdict] = useState({ status: STATUS.SCANNING, progress: 0 })
   const [stats, setStats] = useState({ fps: 0, inferenceMs: 0 })
+  // Experimental canopy-airflow readout, derived passively from the same frames.
+  const [airflow, setAirflow] = useState({ ready: false, level: null })
   const [accepted, setAccepted] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
@@ -63,6 +67,8 @@ export default function ScanPage() {
     const stream = videoRef.current?.srcObject
     stream?.getTracks?.().forEach((track) => track.stop())
     if (videoRef.current) videoRef.current.srcObject = null
+    airflowRef.current.reset()
+    setAirflow({ ready: false, level: null })
     setCameraState('idle')
   }, [])
 
@@ -71,6 +77,8 @@ export default function ScanPage() {
     setAccepted(null)
     setCameraState('starting')
     stabilizerRef.current.reset()
+    airflowRef.current.reset()
+    setAirflow({ ready: false, level: null })
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -132,9 +140,11 @@ export default function ScanPage() {
         }
         const qCtx = qualityCanvasRef.current.getContext('2d', { willReadFrequently: true })
         qCtx.drawImage(video, 0, 0, QUALITY_CANVAS, QUALITY_CANVAS)
-        const quality = assessFrame(
-          qCtx.getImageData(0, 0, QUALITY_CANVAS, QUALITY_CANVAS),
-        )
+        // One read of the small frame, shared by the quality gate and the
+        // passive canopy-airflow estimate -- no extra draw, no extra capture.
+        const frameData = qCtx.getImageData(0, 0, QUALITY_CANVAS, QUALITY_CANVAS)
+        const quality = assessFrame(frameData)
+        setAirflow(airflowRef.current.push(frameData))
 
         let result = { detections: [], top: null, inferenceMs: 0 }
         if (quality.ok) {
@@ -214,6 +224,10 @@ export default function ScanPage() {
       form.append('image', blob, 'scan.jpg')
       form.append('crop', 'potato')
       form.append('language', lang)
+      // Experimental: pass the passively-measured canopy airflow so the risk
+      // engine can factor in still-air dew/spore conditions. Omitted if the
+      // reading has not settled -- it degrades to neutral server-side.
+      if (airflow.ready && airflow.level) form.append('airflow_level', airflow.level)
       const position = await new Promise((resolve) =>
         navigator.geolocation
           ? navigator.geolocation.getCurrentPosition(resolve, () => resolve(null), {
@@ -370,6 +384,22 @@ export default function ScanPage() {
                 </span>
               )}
             </div>
+            {cameraState === 'live' && (
+              <div className="inline small" style={{ marginTop: 8, gap: 6 }}>
+                <span className="muted">💨 {t('scan.airflow')}</span>
+                <span className="badge neutral">
+                  {airflow.ready && airflow.level
+                    ? t(`scan.airflow.${airflow.level}`)
+                    : t('scan.airflow.calibrating')}
+                </span>
+                <span className="badge">{t('scan.airflow.tag')}</span>
+              </div>
+            )}
+            {cameraState === 'live' && airflow.ready && (
+              <p className="muted small" style={{ marginTop: 6 }}>
+                {t('scan.airflow.explain')}
+              </p>
+            )}
             {modeNote && mode !== MODE.UNAVAILABLE && (
               <p className="muted small" style={{ marginTop: 8 }}>
                 {modeNote}

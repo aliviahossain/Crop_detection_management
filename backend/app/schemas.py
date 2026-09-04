@@ -25,6 +25,11 @@ class FieldContext(BaseModel):
     village: str | None = None
     latitude: float | None = Field(default=None, ge=-90, le=90)
     longitude: float | None = Field(default=None, ge=-180, le=180)
+    airflow_level: str | None = Field(
+        default=None,
+        description="EXPERIMENTAL relative in-field airflow from the live scanner: "
+        "still | light | breezy. Not a calibrated wind speed.",
+    )
 
 
 # ----------------------------------------------------------------------

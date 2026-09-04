@@ -87,6 +87,11 @@ async def detect(
     severity_fraction: float | None = Form(
         None, description="Farmer's estimate of the share of the field affected, 0-1."
     ),
+    airflow_level: str | None = Form(
+        None,
+        description="EXPERIMENTAL relative in-field airflow from the live scanner: "
+        "still | light | breezy. Unrecognised values are ignored.",
+    ),
     language: str = Form("en"),
     db: Session = Depends(get_db),
 ) -> DetectResponse:
@@ -105,6 +110,7 @@ async def detect(
         variety=variety,
         soil_condition=soil_condition,
         district=district,
+        airflow_level=airflow_level,
     )
     outcome = run_case(
         db,

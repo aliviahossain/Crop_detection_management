@@ -31,6 +31,7 @@ def risk(req: RiskRequest, db: Session = Depends(get_db)) -> RiskResponse:
         variety=req.variety,
         soil_condition=req.soil_condition,
         district=req.district,
+        airflow_level=req.airflow_level,
     )
 
     if not req.save_case and not req.include_advisory:
