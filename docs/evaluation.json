@@ -1,0 +1,33 @@
+{
+  "weights": "/kaggle/working/runs/yolov8s_finetune_run1/weights/best.pt",
+  "imgsz": 640,
+  "results": [
+    {
+      "split": "combined",
+      "map50": 0.9277,
+      "map50_95": 0.7951,
+      "precision": 0.9168,
+      "recall": 0.8693,
+      "per_class_map50_95": {
+        "potato_early_blight": 0.8799,
+        "potato_late_blight": 0.8006,
+        "potato_healthy": 0.7049
+      }
+    },
+    {
+      "split": "lab (PlantVillage)",
+      "map50": 0.995,
+      "map50_95": 0.995,
+      "precision": 0.9951,
+      "recall": 0.9967,
+      "per_class_map50_95": {
+        "potato_early_blight": 0.9949,
+        "potato_late_blight": 0.995,
+        "potato_healthy": 0.995
+      }
+    }
+  ],
+  "headline_metric": 0.9277,
+  "headline_source": "combined (lab + field)",
+  "verdict": "Mixed-condition evaluation on 254 val images (220 PlantVillage lab + 34 field). Combined mAP50=0.9277 reflects real-world generalisation beyond lab conditions. Lab split retained at 0.995 to confirm no catastrophic forgetting of PlantVillage signal. No standalone field-only split exists yet — field val sample (34 images) is too small for a reliable standalone field metric. Next increment: expand field dataset and re-run with --annotated flag to get a dedicated field split."
+}

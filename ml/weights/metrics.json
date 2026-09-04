@@ -1,19 +1,19 @@
 {
-  "model": "yolov8s.pt",
-  "epochs_requested": 100,
+  "model": "/kaggle/input/datasets/omsinghlodhi/cropguard-weights/best.pt",
+  "epochs_requested": 50,
   "imgsz": 640,
   "classes": [
     "potato_early_blight",
     "potato_late_blight",
     "potato_healthy"
   ],
-  "map50": 0.995,
-  "map50_95": 0.9950000000000002,
-  "precision": 0.9815684291804301,
-  "recall": 0.9847345101511769,
+  "map50": 0.9278423513732516,
+  "map50_95": 0.7951633597639827,
+  "precision": 0.9167903752617822,
+  "recall": 0.8693033961999023,
   "per_class_map50": {
-    "potato_early_blight": 0.9949999999999999,
-    "potato_late_blight": 0.9949999999999999,
-    "potato_healthy": 0.9949999999999999
+    "potato_early_blight": 0.8803329333211133,
+    "potato_late_blight": 0.8003585198811995,
+    "potato_healthy": 0.7047986260896352
   }
 }
