@@ -28,7 +28,6 @@ silently mislabels every prediction in production, and nothing will error.
 | `DATASETS.md` | Dataset comparison, imbalance analysis, provenance |
 | `prepare_dataset.py` | Stratified, balanced dataset build with per-source eval lists |
 | `merge_field.py` | Merges pre-annotated field images into an existing YOLO split |
-| `remap_labels.py` | One-time utility — remapped Roboflow class indices to match taxonomy |
 | `train_yolo.py` | Training (defaults to yolov8s, 100 epochs) |
 | `evaluate.py` | **Lab vs field metrics, reported separately** |
 | `tune_thresholds.py` | Per-class confidence thresholds from an asymmetric cost model |
