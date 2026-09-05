@@ -505,3 +505,71 @@ class TestDashboard:
     def test_districts_listing(self, client):
         data = client.get("/dashboard/districts").json()
         assert any(d["district"] == "Pune" for d in data["districts"])
+
+
+def _seed_case(*, model_version, district, lat, lon):
+    """Insert one confirmed late-blight case straight into the DB, so a test can
+    control the demo/real marker (``model_version``) precisely."""
+    from app.database import SessionLocal
+    from app.models import Case, CaseSource, ReviewStatus
+
+    db = SessionLocal()
+    try:
+        case = Case(
+            source=CaseSource.IMAGE,
+            crop="potato",
+            district=district,
+            village="Testville",
+            latitude=lat,
+            longitude=lon,
+            predicted_class="potato_late_blight",
+            confidence=0.8,
+            model_version=model_version,
+            review_status=ReviewStatus.CONFIRMED,
+            confirmed_class="potato_late_blight",
+            farmer_name="Demo Row" if model_version == "demo-seed" else "Real Farmer",
+        )
+        db.add(case)
+        db.commit()
+    finally:
+        db.close()
+
+
+class TestDataSourceFilter:
+    """The map and dashboard can exclude seeded demo rows to show only real
+    field reports, without dropping real cases whose model_version is NULL."""
+
+    def test_points_endpoint_returns_weighted_points(self, client):
+        data = client.get("/hotspots/points", params={"days": 30}).json()
+        assert "points" in data
+        assert data["severe_threshold"] > 0
+        if data["points"]:
+            p = data["points"][0]
+            assert {"latitude", "longitude", "weight", "verified"} <= p.keys()
+
+    def test_live_only_excludes_demo_but_keeps_null_model_version(self, client):
+        # A demo row and a real row (NULL model_version) in a fresh district.
+        _seed_case(model_version="demo-seed", district="Solapur", lat=17.68, lon=75.90)
+        _seed_case(model_version=None, district="Solapur", lat=17.69, lon=75.91)
+
+        both = client.get(
+            "/hotspots/points", params={"days": 30, "district": "Solapur"}
+        ).json()
+        live = client.get(
+            "/hotspots/points",
+            params={"days": 30, "district": "Solapur", "include_demo": False},
+        ).json()
+        assert both["total_points"] == 2
+        # The demo row is dropped; the real NULL-model_version row is kept.
+        assert live["total_points"] == 1
+
+    def test_dashboard_summary_respects_the_toggle(self, client):
+        _seed_case(model_version="demo-seed", district="Jalna", lat=19.84, lon=75.88)
+        _seed_case(model_version=None, district="Jalna", lat=19.85, lon=75.89)
+
+        both = client.get("/dashboard/summary", params={"district": "Jalna"}).json()
+        live = client.get(
+            "/dashboard/summary", params={"district": "Jalna", "include_demo": False}
+        ).json()
+        assert both["cases"]["total"] == 2
+        assert live["cases"]["total"] == 1

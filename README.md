@@ -131,6 +131,7 @@ synthetic backfill that the response reports explicitly.
 │ POST /risk       │ Smith / Beaumont / TOMCAST / degree-days + OpenWeatherMap
 │ POST /advisory   │ LangGraph pipeline over a human-reviewed IPDM knowledge base
 │ GET  /hotspots   │ Geo-grid aggregation, confirmed cases weighted above unverified
+│ GET  /hotspots/points │ Per-case weighted points for a true density heatmap
 │ POST /sensors    │ Pest-trap & field-sensor ingestion
 │ GET  /review     │ Expert validation queue → training samples
 │ /followups       │ Did the treatment work? Failure escalates to a laboratory
@@ -214,6 +215,20 @@ spliced Bengali into the wrong entry and every other test still passed.
 An officer should not deploy staff on unverified AI predictions, but should still see a
 spike of pending reports. Confirmed cases count 1.0, unreviewed predictions count 0.4,
 and both are reported separately.
+
+The map renders these two ways: a **true density heatmap** (`GET /hotspots/points`
+returns each case at its own coordinate with its weight, so a Leaflet canvas heat layer
+paints a smooth surface that localises to village clusters instead of snapping to the
+5 km grid), and the explainable **grid** view (`GET /hotspots`) an officer can read cell
+by cell. The heat ramp's top of scale is pinned to the "severe" band, so red means the
+same on both.
+
+The map and dashboard both carry a **Data source** switch. Seeded demo rows (marked
+`model_version = "demo-seed"`) exist only so a fresh clone has something to show; **Live
+only** excludes them from every panel and the map, so an officer can see exactly what the
+real field reports say — which, early on, is deliberately very little — while **Demo +
+live** keeps the walkthrough populated. Real cases with no `model_version` are never
+dropped by the filter.
 
 ### 5. ONNX on CPU is the serving path
 

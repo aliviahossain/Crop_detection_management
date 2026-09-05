@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -20,6 +20,16 @@ from app.schemas import FollowUpIn, FollowUpOut, FollowUpUpdate
 router = APIRouter(prefix="/followups", tags=["follow-up"])
 
 ESCALATING_OUTCOMES = {FollowUpOutcome.UNCHANGED, FollowUpOutcome.WORSENED}
+
+# Seeded demo cases carry this model_version; real detections never do.
+DEMO_MODEL_VERSION = "demo-seed"
+
+
+def _join_real_cases(stmt):
+    """Restrict a FollowUp query to follow-ups on real (non-demo) cases."""
+    return stmt.join(Case, FollowUp.case_id == Case.id).where(
+        or_(Case.model_version.is_(None), Case.model_version != DEMO_MODEL_VERSION)
+    )
 
 
 @router.get("", response_model=list[FollowUpOut], summary="List follow-ups")
@@ -93,25 +103,35 @@ def update(follow_up_id: int, payload: FollowUpUpdate, db: Session = Depends(get
 
 
 @router.get("/stats", summary="Treatment outcome statistics")
-def stats(days: int = Query(90, ge=1, le=730), db: Session = Depends(get_db)) -> dict:
+def stats(
+    days: int = Query(90, ge=1, le=730),
+    include_demo: bool = Query(True),
+    db: Session = Depends(get_db),
+) -> dict:
     """What share of advisories actually resolved the problem -- the closest
     thing this system has to an outcome measure of 'reduced crop loss'."""
     since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
-    rows = db.execute(
+    outcome_stmt = (
         select(FollowUp.outcome, func.count(FollowUp.id))
         .where(FollowUp.created_at >= since)
         .group_by(FollowUp.outcome)
-    ).all()
+    )
+    if not include_demo:
+        outcome_stmt = _join_real_cases(outcome_stmt)
+    rows = db.execute(outcome_stmt).all()
     counts = {outcome.value: count for outcome, count in rows}
     closed = sum(v for k, v in counts.items() if k != FollowUpOutcome.PENDING.value)
     improved = counts.get(FollowUpOutcome.RESOLVED.value, 0) + counts.get(
         FollowUpOutcome.IMPROVING.value, 0
     )
-    overdue = db.scalar(
+    overdue_stmt = (
         select(func.count(FollowUp.id))
         .where(FollowUp.outcome == FollowUpOutcome.PENDING)
         .where(FollowUp.due_date <= datetime.now(timezone.utc).replace(tzinfo=None))
-    ) or 0
+    )
+    if not include_demo:
+        overdue_stmt = _join_real_cases(overdue_stmt)
+    overdue = db.scalar(overdue_stmt) or 0
     return {
         "window_days": days,
         "counts": counts,

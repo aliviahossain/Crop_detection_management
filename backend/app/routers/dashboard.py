@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -27,18 +27,34 @@ from app.services import taxonomy
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
+# Seeded demo cases carry this model_version; real detections never do.
+DEMO_MODEL_VERSION = "demo-seed"
+
+
+def _exclude_demo(stmt):
+    """Drop seeded demo cases while keeping real ones, including those whose
+    model_version is NULL (a plain ``!=`` would silently drop NULLs too)."""
+    return stmt.where(
+        or_(Case.model_version.is_(None), Case.model_version != DEMO_MODEL_VERSION)
+    )
+
 
 @router.get("/summary", summary="Headline numbers for the officer dashboard")
 def summary(
     days: int = Query(30, ge=1, le=365),
     district: str | None = Query(None),
+    include_demo: bool = Query(True),
     db: Session = Depends(get_db),
 ) -> dict:
     since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
 
     def base():
         stmt = select(Case).where(Case.created_at >= since)
-        return stmt.where(Case.district == district) if district else stmt
+        if district:
+            stmt = stmt.where(Case.district == district)
+        if not include_demo:
+            stmt = _exclude_demo(stmt)
+        return stmt
 
     cases = list(db.scalars(base()).all())
     total = len(cases)
@@ -66,17 +82,21 @@ def summary(
         if c.district and c.risk_level == RiskLevel.HIGH:
             high_risk_districts[c.district] = high_risk_districts.get(c.district, 0) + 1
 
-    overdue = db.scalar(
+    overdue_stmt = (
         select(func.count(FollowUp.id))
         .where(FollowUp.outcome == FollowUpOutcome.PENDING)
         .where(FollowUp.due_date <= datetime.now(timezone.utc).replace(tzinfo=None))
-    ) or 0
+    )
+    if not include_demo:
+        overdue_stmt = _exclude_demo(overdue_stmt.join(Case, FollowUp.case_id == Case.id))
+    overdue = db.scalar(overdue_stmt) or 0
 
-    sensor_devices = db.scalar(
-        select(func.count(func.distinct(SensorReading.device_id))).where(
-            SensorReading.recorded_at >= since
-        )
-    ) or 0
+    sensor_stmt = select(func.count(func.distinct(SensorReading.device_id))).where(
+        SensorReading.recorded_at >= since
+    )
+    if not include_demo:
+        sensor_stmt = sensor_stmt.where(SensorReading.device_id.notlike("demo-trap-%"))
+    sensor_devices = db.scalar(sensor_stmt) or 0
 
     return {
         "window_days": days,
@@ -114,12 +134,15 @@ def trend(
     days: int = Query(30, ge=7, le=365),
     district: str | None = Query(None),
     class_key: str | None = Query(None),
+    include_demo: bool = Query(True),
     db: Session = Depends(get_db),
 ) -> dict:
     since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
     stmt = select(Case).where(Case.created_at >= since)
     if district:
         stmt = stmt.where(Case.district == district)
+    if not include_demo:
+        stmt = _exclude_demo(stmt)
     cases = list(db.scalars(stmt).all())
 
     series: dict[str, dict] = {}
@@ -171,11 +194,17 @@ def cases(
 
 
 @router.get("/districts", summary="Districts present in the data")
-def districts(db: Session = Depends(get_db)) -> dict:
-    rows = db.execute(
+def districts(
+    include_demo: bool = Query(True),
+    db: Session = Depends(get_db),
+) -> dict:
+    stmt = (
         select(Case.district, func.count(Case.id))
         .where(Case.district.is_not(None))
         .group_by(Case.district)
         .order_by(func.count(Case.id).desc())
-    ).all()
+    )
+    if not include_demo:
+        stmt = _exclude_demo(stmt)
+    rows = db.execute(stmt).all()
     return {"districts": [{"district": d, "cases": n} for d, n in rows]}

@@ -42,23 +42,24 @@ export const api = {
   advisory: (payload) => request('/advisory', json(payload)),
 
   hotspots: (params) => request(`/hotspots?${new URLSearchParams(params)}`),
+  hotspotPoints: (params) => request(`/hotspots/points?${new URLSearchParams(params)}`),
 
   reviewQueue: (params) => request(`/review/queue?${new URLSearchParams(params)}`),
   reviewCase: (id) => request(`/review/${id}`),
   decide: (id, payload) => request(`/review/${id}`, json(payload)),
-  accuracy: () => request('/review/stats/accuracy'),
+  accuracy: (params = {}) => request(`/review/stats/accuracy?${new URLSearchParams(params)}`),
 
   dashboard: (params) => request(`/dashboard/summary?${new URLSearchParams(params)}`),
   trend: (params) => request(`/dashboard/trend?${new URLSearchParams(params)}`),
-  districts: () => request('/dashboard/districts'),
+  districts: (params = {}) => request(`/dashboard/districts?${new URLSearchParams(params)}`),
 
   followUps: (params) => request(`/followups?${new URLSearchParams(params)}`),
   updateFollowUp: (id, payload) =>
     request(`/followups/${id}`, { ...json(payload), method: 'PATCH' }),
-  followUpStats: () => request('/followups/stats'),
+  followUpStats: (params = {}) => request(`/followups/stats?${new URLSearchParams(params)}`),
 
   sensors: (params) => request(`/sensors?${new URLSearchParams(params)}`),
-  sensorSummary: () => request('/sensors/summary'),
+  sensorSummary: (params = {}) => request(`/sensors/summary?${new URLSearchParams(params)}`),
   postSensor: (payload) => request('/sensors', json(payload)),
 
   // Floating assistant. The Gemini key lives on the backend; we only ever

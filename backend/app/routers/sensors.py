@@ -82,10 +82,11 @@ def list_readings(
 def summary(
     metric: str = Query("trap_count"),
     days: int = Query(7, ge=1, le=90),
+    include_demo: bool = Query(True),
     db: Session = Depends(get_db),
 ) -> dict:
     since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
-    rows = db.execute(
+    stmt = (
         select(
             SensorReading.geo_cell,
             SensorReading.district,
@@ -98,7 +99,10 @@ def summary(
         .where(SensorReading.metric == metric)
         .where(SensorReading.geo_cell.is_not(None))
         .group_by(SensorReading.geo_cell, SensorReading.district)
-    ).all()
+    )
+    if not include_demo:
+        stmt = stmt.where(SensorReading.device_id.notlike("demo-trap-%"))
+    rows = db.execute(stmt).all()
 
     cells = []
     for cell, district, count, avg_v, max_v, devices in rows:

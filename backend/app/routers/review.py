@@ -16,7 +16,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import case as sql_case, func, select
+from sqlalchemy import case as sql_case, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -25,6 +25,17 @@ from app.schemas import CaseOut, ReviewDecision
 from app.services import taxonomy
 
 router = APIRouter(prefix="/review", tags=["review"])
+
+# Seeded demo cases carry this model_version; real detections never do.
+DEMO_MODEL_VERSION = "demo-seed"
+
+
+def _exclude_demo(stmt):
+    """Drop seeded demo cases while keeping real ones, including those whose
+    model_version is NULL (a plain ``!=`` would silently drop NULLs too)."""
+    return stmt.where(
+        or_(Case.model_version.is_(None), Case.model_version != DEMO_MODEL_VERSION)
+    )
 
 
 @router.get("/queue", response_model=list[CaseOut], summary="Cases awaiting expert validation")
@@ -46,28 +57,32 @@ def queue(
 
 
 @router.get("/stats/accuracy", summary="Field-validated model accuracy")
-def accuracy(db: Session = Depends(get_db)) -> dict:
+def accuracy(
+    include_demo: bool = Query(True),
+    db: Session = Depends(get_db),
+) -> dict:
     """Real accuracy measured against expert decisions, not a test-set number.
 
     This is the metric that matters after deployment, and it is what tells you
     when a retrain is due.
     """
-    reviewed = db.scalar(
-        select(func.count(Case.id)).where(
-            Case.review_status.in_([ReviewStatus.CONFIRMED, ReviewStatus.CORRECTED])
-        )
-    ) or 0
-    confirmed = db.scalar(
-        select(func.count(Case.id)).where(Case.review_status == ReviewStatus.CONFIRMED)
-    ) or 0
-    rejected = db.scalar(
-        select(func.count(Case.id)).where(Case.review_status == ReviewStatus.REJECTED)
-    ) or 0
-    pending = db.scalar(
-        select(func.count(Case.id)).where(Case.review_status == ReviewStatus.PENDING)
-    ) or 0
 
-    per_class = db.execute(
+    def count_where(*clauses) -> int:
+        stmt = select(func.count(Case.id))
+        for clause in clauses:
+            stmt = stmt.where(clause)
+        if not include_demo:
+            stmt = _exclude_demo(stmt)
+        return db.scalar(stmt) or 0
+
+    reviewed = count_where(
+        Case.review_status.in_([ReviewStatus.CONFIRMED, ReviewStatus.CORRECTED])
+    )
+    confirmed = count_where(Case.review_status == ReviewStatus.CONFIRMED)
+    rejected = count_where(Case.review_status == ReviewStatus.REJECTED)
+    pending = count_where(Case.review_status == ReviewStatus.PENDING)
+
+    per_class_stmt = (
         select(
             Case.predicted_class,
             func.count(Case.id),
@@ -75,7 +90,10 @@ def accuracy(db: Session = Depends(get_db)) -> dict:
         )
         .where(Case.review_status.in_([ReviewStatus.CONFIRMED, ReviewStatus.CORRECTED]))
         .group_by(Case.predicted_class)
-    ).all()
+    )
+    if not include_demo:
+        per_class_stmt = _exclude_demo(per_class_stmt)
+    per_class = db.execute(per_class_stmt).all()
 
     unexported = db.scalar(
         select(func.count(TrainingSample.id)).where(TrainingSample.exported.is_(False))

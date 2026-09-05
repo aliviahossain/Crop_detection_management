@@ -11,7 +11,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -25,6 +25,16 @@ router = APIRouter(prefix="/hotspots", tags=["hotspots"])
 UNVERIFIED_WEIGHT = 0.4
 # Weighted-count cut-offs for the map's colour ramp.
 INTENSITY_BANDS = {"severe": 8.0, "high": 4.0, "moderate": 2.0}
+# Seeded demo cases carry this model_version; real detections never do.
+DEMO_MODEL_VERSION = "demo-seed"
+
+
+def _exclude_demo(stmt):
+    """Drop seeded demo cases while keeping real ones, including those whose
+    model_version is NULL (a plain ``!=`` would silently drop NULLs too)."""
+    return stmt.where(
+        or_(Case.model_version.is_(None), Case.model_version != DEMO_MODEL_VERSION)
+    )
 
 
 def _intensity(weighted: float) -> str:
@@ -42,6 +52,7 @@ def hotspots(
     district: str | None = Query(None),
     cell_size_deg: float = Query(DEFAULT_CELL_DEG, gt=0.005, le=1.0),
     include_unverified: bool = Query(True),
+    include_demo: bool = Query(True),
     db: Session = Depends(get_db),
 ) -> dict:
     since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
@@ -55,6 +66,8 @@ def hotspots(
         stmt = stmt.where(Case.crop == crop)
     if district:
         stmt = stmt.where(Case.district == district)
+    if not include_demo:
+        stmt = _exclude_demo(stmt)
     cases = list(db.scalars(stmt).all())
 
     buckets: dict[str, dict] = {}
@@ -132,6 +145,77 @@ def hotspots(
         "total_confirmed": sum(f["confirmed_cases"] for f in features),
         "total_unverified": sum(f["unverified_cases"] for f in features),
         "cells": features,
+    }
+
+
+@router.get("/points", summary="Individual case points for a true density heatmap")
+def hotspot_points(
+    days: int = Query(30, ge=1, le=365),
+    crop: str | None = Query(None),
+    class_key: str | None = Query(None),
+    district: str | None = Query(None),
+    include_unverified: bool = Query(True),
+    include_demo: bool = Query(True),
+    limit: int = Query(5000, ge=1, le=20000),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Unlike ``/hotspots`` (which snaps cases onto a 5 km grid), this returns
+    each case at its own coordinate with a weight, so a Leaflet heat layer can
+    render a smooth, finely-localised density surface. The same verification
+    weighting applies: a confirmed case weighs 1.0, an unreviewed one 0.4."""
+    since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
+    stmt = (
+        select(Case)
+        .where(Case.created_at >= since)
+        .where(Case.latitude.is_not(None))
+        .where(Case.longitude.is_not(None))
+    )
+    if crop:
+        stmt = stmt.where(Case.crop == crop)
+    if district:
+        stmt = stmt.where(Case.district == district)
+    if not include_demo:
+        stmt = _exclude_demo(stmt)
+    cases = list(db.scalars(stmt.order_by(Case.created_at.desc()).limit(limit)).all())
+
+    points = []
+    confirmed = 0
+    unverified = 0
+    for c in cases:
+        label = c.effective_class
+        if label is None or label == "potato_healthy":
+            continue
+        if class_key and label != class_key:
+            continue
+        if c.review_status == ReviewStatus.REJECTED:
+            continue
+        verified = c.review_status in {ReviewStatus.CONFIRMED, ReviewStatus.CORRECTED}
+        if not verified and not include_unverified:
+            continue
+        if verified:
+            confirmed += 1
+        else:
+            unverified += 1
+        points.append(
+            {
+                "latitude": round(c.latitude, 5),
+                "longitude": round(c.longitude, 5),
+                "weight": 1.0 if verified else UNVERIFIED_WEIGHT,
+                "class_key": label,
+                "verified": verified,
+            }
+        )
+
+    return {
+        "window_days": days,
+        "unverified_weight": UNVERIFIED_WEIGHT,
+        # Lets the client align the heat ramp's top of scale with the "severe"
+        # band, so red on the heatmap means the same as red on the grid.
+        "severe_threshold": INTENSITY_BANDS["severe"],
+        "total_confirmed": confirmed,
+        "total_unverified": unverified,
+        "total_points": len(points),
+        "points": points,
     }
 
 

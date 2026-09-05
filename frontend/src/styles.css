@@ -405,6 +405,24 @@ details pre {
 .filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
 .filters > div { flex: 1 1 150px; }
 
+.segmented { display: inline-flex; width: 100%; border: 1.5px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; background: #fff; }
+.segmented button {
+  flex: 1 1 0;
+  border: 0;
+  background: #fff;
+  padding: 0 12px;
+  min-height: var(--tap);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.segmented button + button { border-left: 1.5px solid var(--line); }
+.segmented button.active { background: var(--brand); color: #fff; }
+.segmented button:hover:not(.active) { background: var(--brand-soft); color: var(--brand-dark); }
+
 .map { height: 68vh; min-height: 380px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); }
 .leaflet-container { font: inherit; }
 

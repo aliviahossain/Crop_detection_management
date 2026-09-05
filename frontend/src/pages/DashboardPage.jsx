@@ -37,6 +37,7 @@ export default function DashboardPage() {
   const t = useT()
   const [days, setDays] = useState(30)
   const [district, setDistrict] = useState('')
+  const [includeDemo, setIncludeDemo] = useState(true)
   const [summary, setSummary] = useState(null)
   const [trend, setTrend] = useState(null)
   const [accuracy, setAccuracy] = useState(null)
@@ -45,17 +46,20 @@ export default function DashboardPage() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    api.districts().then((d) => setDistricts(d.districts)).catch(() => {})
-  }, [])
+    api
+      .districts({ include_demo: includeDemo })
+      .then((d) => setDistricts(d.districts))
+      .catch(() => {})
+  }, [includeDemo])
 
   useEffect(() => {
-    const params = { days }
+    const params = { days, include_demo: includeDemo }
     if (district) params.district = district
     Promise.all([
       api.dashboard(params),
       api.trend(params),
-      api.accuracy(),
-      api.followUpStats(),
+      api.accuracy({ include_demo: includeDemo }),
+      api.followUpStats({ include_demo: includeDemo }),
     ])
       .then(([s, tr, acc, fu]) => {
         setSummary(s)
@@ -64,7 +68,7 @@ export default function DashboardPage() {
         setFollowUps(fu)
       })
       .catch((e) => setError(e.message))
-  }, [days, district])
+  }, [days, district, includeDemo])
 
   if (error) return <main className="page"><div className="alert danger">{error}</div></main>
   if (!summary) return <main className="page">{t('common.loading')}</main>
@@ -80,6 +84,25 @@ export default function DashboardPage() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="filters">
+          <div>
+            <label>Data source</label>
+            <div className="segmented">
+              <button
+                type="button"
+                className={includeDemo ? 'active' : ''}
+                onClick={() => setIncludeDemo(true)}
+              >
+                Demo + live
+              </button>
+              <button
+                type="button"
+                className={!includeDemo ? 'active' : ''}
+                onClick={() => setIncludeDemo(false)}
+              >
+                Live only
+              </button>
+            </div>
+          </div>
           <div>
             <label>{t('common.window')}</label>
             <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
@@ -100,6 +123,13 @@ export default function DashboardPage() {
             </select>
           </div>
         </div>
+        <p className="muted small" style={{ marginTop: 10, marginBottom: 0 }}>
+          {includeDemo
+            ? 'Showing seeded demo data alongside real field reports, so the dashboard is populated for a walkthrough.'
+            : c.total === 0
+              ? 'Live only: no real field reports have been logged yet, so these panels are empty by design.'
+              : 'Live only: seeded demo cases are excluded, so every number below comes from real field reports.'}
+        </p>
       </div>
 
       <div className="grid cards" style={{ marginBottom: 16 }}>
