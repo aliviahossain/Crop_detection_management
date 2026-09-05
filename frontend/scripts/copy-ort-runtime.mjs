@@ -18,7 +18,7 @@ const DST = 'public/ort'
 const FILES = ['ort-wasm-simd-threaded.wasm', 'ort-wasm-simd-threaded.mjs']
 
 if (!existsSync(SRC)) {
-  console.error(`[ort] ${SRC} not found — run npm install first.`)
+  console.error(`[ort] ${SRC} not found - run npm install first.`)
   process.exit(1)
 }
 

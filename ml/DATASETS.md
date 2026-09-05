@@ -2,7 +2,7 @@
 
 Which dataset you train on determines what the model actually learns. This
 records the options, their real sizes, and why the pipeline defaults the way it
-does — so the decision is reviewable rather than inherited.
+does - so the decision is reviewable rather than inherited.
 
 ## The three-class requirement
 
@@ -21,8 +21,8 @@ PlantVillage supplies the volume but every image is one leaf on a uniform grey
 background. A model trained on it alone scores near-perfectly on its own test
 split and then degrades on a phone photo of a real field, because what it
 actually learned is "leaf on grey". PlantDoc supplies a few hundred genuine
-field-condition images with real bounding boxes — cluttered backgrounds, mixed
-lighting, leaves at angles — which is what the farmer's camera will send.
+field-condition images with real bounding boxes - cluttered backgrounds, mixed
+lighting, leaves at angles - which is what the farmer's camera will send.
 
 `prepare_dataset.py` takes both and tags each image `pv_` (lab) or `ann_`
 (field), then writes separate `val_lab.txt` and `val_field.txt` lists so
@@ -42,7 +42,7 @@ The imbalance is essentially unchanged at about **6.4:1**. PlantDoc's healthy
 potato class (it calls it simply "Potato leaf") is tiny, so merging adds field
 realism to the two disease classes without meaningfully helping the class that
 needs it most. `--cap-train 400 --oversample-min` equalises the *training*
-split, but healthy then ends up roughly two-thirds duplicated images — the run
+split, but healthy then ends up roughly two-thirds duplicated images - the run
 prints that percentage rather than hiding it behind the parity claim.
 
 **The honest position: healthy is the weak class, and no flag fixes that.** The
@@ -54,31 +54,31 @@ review queue is designed to accumulate (`ml/export_feedback.py`).
 | | **PlantVillage** (default) | **PlantDoc** | **Roboflow "Plant Diseases Detection and Classification"** |
 |---|---|---|---|
 | Potato images | ~2,150 (1000 / 1000 / 152) | low hundreds | ~2,600 total across **10** classes, so a few hundred potato |
-| Potato classes | Early, Late, **Healthy** | Early, Late, Healthy | Early, Late — **no potato-specific healthy** |
+| Potato classes | Early, Late, **Healthy** | Early, Late, Healthy | Early, Late - **no potato-specific healthy** |
 | Conditions | Lab: one leaf, uniform grey background | **Real field conditions** | Mixed |
 | Task type | Classification (no boxes) | Detection (real boxes) | Detection (real boxes) |
 | Provenance | ICAR/Penn State, widely cited, peer-reviewed | Published paper (Singh et al., CoDS-COMAD 2020) | Unverified 2023 student graduation project |
-| Role here | **Volume base** | **Realism — merged in by default** | Reference for pipeline structure only |
+| Role here | **Volume base** | **Realism - merged in by default** | Reference for pipeline structure only |
 
 ### Why PlantVillage is the base and not the Roboflow set
 
 The Roboflow dataset behind [muqadasejaz/Plant-Detection-using-YOLOv8](https://github.com/muqadasejaz/Plant-Detection-using-YOLOv8)
-is a reasonable structural reference — Roboflow → notebook → `best.pt` → inference
+is a reasonable structural reference - Roboflow → notebook → `best.pt` → inference
 is the right shape of pipeline. As a *dataset* for this project it is the weaker
 choice:
 
 1. **Volume.** ~2,600 images spread over 10 classes. Filtering to potato leaves
-   a few hundred images across two classes — against PlantVillage's ~2,000 for
+   a few hundred images across two classes - against PlantVillage's ~2,000 for
    the same two classes.
 2. **It has no potato healthy class.** Its healthy category is a generic
    "Healthy Leaf" spanning apple, corn, tomato and potato. Training our
    `potato_healthy` class on apple and tomato leaves would teach the model that
-   any healthy-looking leaf is a healthy *potato* leaf — precisely the failure
+   any healthy-looking leaf is a healthy *potato* leaf - precisely the failure
    that produces a confident "no action needed" on the wrong crop.
 3. **Unverified provenance.** A 2023 graduation project with no published
    annotation protocol and no inter-annotator agreement. Its reported
    mAP@50 of 0.93 is on its own test split, and its README documents no ONNX
-   export, no threshold tuning, and no class-imbalance handling — so those
+   export, no threshold tuning, and no class-imbalance handling - so those
    numbers carry no information about field behaviour.
 
 That third point is not a reason to dismiss it, only a reason not to inherit
@@ -89,8 +89,8 @@ its numbers. If you do want to use it, `prepare_dataset.py --annotated
 
 **PlantVillage is laboratory imagery.** Every image is a single detached leaf on
 a uniform background under even lighting. A detector trained on it alone learns
-"leaf on grey background" as much as it learns disease, and its test-split mAP —
-typically 0.95+ — says almost nothing about a farmer's phone photo containing
+"leaf on grey background" as much as it learns disease, and its test-split mAP - 
+typically 0.95+ - says almost nothing about a farmer's phone photo containing
 soil, straw, shadow, several overlapping leaves and motion blur.
 
 This is why the pipeline:
@@ -128,7 +128,7 @@ python ml/prepare_dataset.py --plantvillage <path> --out <out> \
 ```
 
 - **`--cap-train`** caps majority classes in the **train split only**. val and
-  test are never touched — balancing your evaluation set means measuring on a
+  test are never touched - balancing your evaluation set means measuring on a
   distribution you invented.
 - **`--oversample-min`** repeats minority-class training images up to the
   majority count. Combined with per-epoch augmentation these are varied views,
@@ -146,7 +146,7 @@ split can put most of the hard examples in one split by chance and you will
 never know.
 
 `stratified_split()` assigns **exact per-class quotas**, deterministically by
-content hash — so an image keeps its split across reruns, val scores stay
+content hash - so an image keeps its split across reruns, val scores stay
 comparable, and nothing leaks from train into val. Small classes additionally
 get raised to a **minimum of 20 val images** (capped at 25% of the class), so
 every class is actually measurable.
@@ -162,9 +162,9 @@ python ml/prepare_dataset.py \
     --cap-train 400 --oversample-min
 ```
 
-**Highest-value work you can do on this project:** photograph 200–300 real
-potato leaves in Maharashtra fields — healthy and diseased, different times of
-day — and annotate them in Roboflow. A few hundred genuine field images are
+**Highest-value work you can do on this project:** photograph 200-300 real
+potato leaves in Maharashtra fields - healthy and diseased, different times of
+day - and annotate them in Roboflow. A few hundred genuine field images are
 worth more than another ten thousand lab images, and they are what turns a
 demo-grade number into a defensible one. `ml/export_feedback.py` then keeps that
 set growing from expert-validated cases automatically.

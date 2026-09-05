@@ -1,5 +1,5 @@
 """
-merge_field.py — add pre-annotated field images into an existing YOLO split.
+merge_field.py - add pre-annotated field images into an existing YOLO split.
 
 Matches prepare_dataset.py output structure:
     <out>/images/train,val,test
@@ -43,7 +43,7 @@ def parse_args():
     p.add_argument(
         "--ratios", type=float, nargs=3, default=[0.8, 0.1, 0.1],
         metavar=("TRAIN", "VAL", "TEST"),
-        help="Train/val/test split ratios — must sum to 1.0 (default: 0.8 0.1 0.1)",
+        help="Train/val/test split ratios - must sum to 1.0 (default: 0.8 0.1 0.1)",
     )
     return p.parse_args()
 
@@ -105,7 +105,7 @@ def collect_pairs(field_dir: Path):
         pairs.append((img_path, label_path))
 
     if skipped:
-        print(f"  WARNING: {len(skipped)} image(s) skipped — no paired label file:")
+        print(f"  WARNING: {len(skipped)} image(s) skipped - no paired label file:")
         for name in skipped[:10]:
             print(f"    {name}")
         if len(skipped) > 10:
@@ -123,7 +123,7 @@ def split_pairs(pairs, ratios, seed):
     n       = len(shuffled)
     n_train = int(n * ratios[0])
     n_val   = int(n * ratios[1])
-    # test gets remainder — no rounding loss
+    # test gets remainder - no rounding loss
 
     return {
         "train": shuffled[:n_train],

@@ -1,6 +1,6 @@
 # CropGuard Maharashtra
 
-**SIH 2026 · PS26131 — Crop Disease & Pest Detection System**
+**SIH 2026 · PS26131 - Crop Disease & Pest Detection System**
 Government of Maharashtra (Maharashtra State Innovation Society)
 
 A farmer- and extension-worker-facing crop health system for **potato**: real-time camera
@@ -18,7 +18,7 @@ queue that feeds retraining, and a dashboard for agriculture officials.
 
 That is a deliberate choice, not a shortcut:
 
-- Late blight is the textbook weather-driven epidemic — the **Smith Period** risk model
+- Late blight is the textbook weather-driven epidemic - the **Smith Period** risk model
   is defined for it, so the detection and forecasting halves of this system reinforce
   each other on the same crop.
 - Potato is a major Maharashtra rabi crop with real extension demand.
@@ -35,34 +35,34 @@ banner. On a fresh clone, with no weights and no API keys:
 
 | Component | Fresh clone behaviour |
 |---|---|
-| Image detection | **Unavailable** — cases are routed to the expert queue rather than given a guessed diagnosis. |
+| Image detection | **Unavailable** - cases are routed to the expert queue rather than given a guessed diagnosis. |
 | Weather | Deterministic **synthetic feed**, flagged `synthetic: true` in every response. |
-| Risk models | **Fully working** — the agronomic models need no training data. |
-| Advisory / RAG | **Fully working** — BM25 retrieval if ChromaDB is not installed. |
-| Marathi / Hindi / Bengali | **Fully working** — template catalog, no API key needed. |
-| XGBoost risk layer | **Inactive by design** — no historical outbreak data exists yet to train it honestly. It activates as confirmed cases accrue: `scripts/export_risk_dataset.py` builds a leakage-safe training set from them, `ml/train_risk_xgb.py` trains it (both refuse fabricated or too-little data), and the backend loads the artifact automatically. |
+| Risk models | **Fully working** - the agronomic models need no training data. |
+| Advisory / RAG | **Fully working** - BM25 retrieval if ChromaDB is not installed. |
+| Marathi / Hindi / Bengali | **Fully working** - template catalog, no API key needed. |
+| XGBoost risk layer | **Inactive by design** - no historical outbreak data exists yet to train it honestly. It activates as confirmed cases accrue: `scripts/export_risk_dataset.py` builds a leakage-safe training set from them, `ml/train_risk_xgb.py` trains it (both refuse fabricated or too-little data), and the backend loads the artifact automatically. |
 
 Nothing fabricates a result to look complete.
 
 `GET /meta/health` reports two separate lists, because conflating them misleads in both
 directions:
 
-- **`degraded`** — something that should work and does not. Only these raise a banner.
-- **`by_design`** — a documented, deliberate state. Template-only advisories and an
+- **`degraded`** - something that should work and does not. Only these raise a banner.
+- **`by_design`** - a documented, deliberate state. Template-only advisories and an
   untrained XGBoost layer are the specification, not faults.
 
 ---
 
 ## Quick start
 
-Requires Python 3.10–3.13 and Node 18+.
+Requires Python 3.10-3.13 and Node 18+.
 
 ```bash
 # 1. Backend
 python -m venv .venv
 .venv/Scripts/activate            # Windows;  source .venv/bin/activate on Unix
 pip install -r backend/requirements.txt
-# First-time setup ONLY — creates .env if you don't have one, never overwrites an existing one.
+# First-time setup ONLY - creates .env if you don't have one, never overwrites an existing one.
 # Skip this entirely if .env already exists (overwriting it wipes your OPENWEATHER_API_KEY).
 #   bash:        [ -f .env ] || cp .env.example .env
 #   PowerShell:  if (!(Test-Path .env)) { Copy-Item .env.example .env }
@@ -84,13 +84,13 @@ Tests:
 
 ```bash
 pip install -r backend/requirements-dev.txt
-pytest backend/tests -q      # 101 tests, no network, no trained model needed
+pytest backend/tests -q      # 153 tests, no network, no trained model needed
 
-cd frontend && npm test      # 39 tests: browser decoder parity, quality gate,
+cd frontend && npm test      # 50 tests: browser decoder parity, quality gate,
                              # verdict stabilizer, real onnxruntime-web run
 ```
 
-Optional extras. Each has a tested fallback, so none is required — but installing them
+Optional extras. Each has a tested fallback, so none is required - but installing them
 upgrades retrieval from BM25 to ChromaDB vector search and enables the XGBoost layer:
 
 ```bash
@@ -109,7 +109,7 @@ OPENWEATHER_API_KEY=your_key_here
 ```
 
 The free tier covers current conditions and a 5-day forecast, which is what the agronomic
-models need. It has no history API — so past hours come from the system's own
+models need. It has no history API - so past hours come from the system's own
 `weather_observations` cache, which fills up as it runs, and any remaining gap is
 synthetic backfill that the response reports explicitly.
 
@@ -172,7 +172,7 @@ published agronomic models** that run deterministically today:
 |---|---|---|
 | **Smith Period** (Smith, 1956) | Late blight | 2 consecutive days: min temp ≥ 10 °C **and** ≥ 11 h at RH ≥ 90% |
 | **Beaumont Period** (1947) | Late blight | 46 consecutive hours ≥ 10 °C and RH ≥ 75% (earlier, looser warning) |
-| **TOMCAST DSV** | Early blight | Daily severity 0–4 from leaf-wetness hours × mean temperature; spray at 15 DSV |
+| **TOMCAST DSV** | Early blight | Daily severity 0-4 from leaf-wetness hours × mean temperature; spray at 15 DSV |
 | **Degree-days** | Tuber moth, aphids | Single-triangle accumulation; ~360 DD above 10 °C per tuber-moth generation |
 
 These are then adjusted by **crop stage × variety susceptibility × soil drainage**, plus
@@ -180,7 +180,7 @@ confirmed nearby cases and live trap counts.
 
 The **XGBoost + SHAP secondary layer** (`ml/train_risk_xgb.py`) is additive refinement.
 It refuses to train on fewer than 200 rows and refuses to save a model scoring below 0.6
-AUC, and it can never move the rule-based score by more than ±0.20 — a thinly-trained
+AUC, and it can never move the rule-based score by more than ±0.20 - a thinly-trained
 model must not be able to override a fired Smith Period.
 
 The dataset it needs is a by-product of running the system: once expert-confirmed cases
@@ -200,7 +200,7 @@ resistance, not a bigger dose).
 ### 3. Marathi, Hindi and Bengali work without an API key
 
 Advisories are assembled from a **translated message catalog**
-(`backend/app/services/translate.py`) — 49 messages × 4 languages — so a farmer gets
+(`backend/app/services/translate.py`) - 49 messages × 4 languages - so a farmer gets
 genuinely native-language guidance with no network, no LLM, and no per-request cost. An
 LLM is used only to translate free-text knowledge-base excerpts, and falls back to English
 rather than risk a mistranslated dose.
@@ -226,7 +226,7 @@ same on both.
 The map and dashboard both carry a **Data source** switch. Seeded demo rows (marked
 `model_version = "demo-seed"`) exist only so a fresh clone has something to show; **Live
 only** excludes them from every panel and the map, so an officer can see exactly what the
-real field reports say — which, early on, is deliberately very little — while **Demo +
+real field reports say - which, early on, is deliberately very little - while **Demo +
 live** keeps the walkthrough populated. Real cases with no `model_version` are never
 dropped by the filter.
 
@@ -245,23 +245,23 @@ on 33 milliseconds of video. So the scanner has three gates:
 
 1. **Quality gate.** Every frame is scored for blur (variance of Laplacian) and exposure
    before the model sees it. Blurred and badly lit frames are discarded and the farmer is
-   told what to fix — "hold steady", "move into better light" — rather than being given a
+   told what to fix - "hold steady", "move into better light" - rather than being given a
    confident answer computed from mush.
 2. **Temporal consensus.** No verdict appears until the model agrees with itself across a
    rolling window of good frames (default: 6 of 10 frames, ≥55% mean confidence). Five
    healthy frames plus one lucky late-blight frame yields *healthy*, not a scare.
 3. **Explicit accept.** Nothing is stored until the farmer presses Accept, which sends
-   that exact frame through the full `/detect` pipeline — same advisory, same triage, same
+   that exact frame through the full `/detect` pipeline - same advisory, same triage, same
    follow-up as a photo upload. Discarded scans leave no record at all.
 
 Inference runs **in the browser** via onnxruntime-web: no network per frame, no server
 cost, and scanning keeps working on a bad field connection or none at all. The WASM
 runtime is served from our own origin rather than a CDN, precisely so the offline claim is
 real. If WASM cannot start, or no model is installed, it falls back to `/detect/frame` and
-then to plain photo capture — and says which mode it is in.
+then to plain photo capture - and says which mode it is in.
 
 The browser decoder is a deliberate mirror of `services/detector.py`, and
-`frontend/src/lib/__tests__/` asserts they agree on the same numbers — including one test
+`frontend/src/lib/__tests__/` asserts they agree on the same numbers - including one test
 that runs a real ONNX model through onnxruntime-web and checks it decodes the identical
 box the Python server does. Two implementations of the same maths is a bug waiting to
 happen; the tests are what keep them honest.
@@ -271,14 +271,14 @@ happen; the tests are what keep them honest.
 A single `conf=0.25` assumes a false positive and a false negative cost the same. Missing
 late blight can cost the field; a false positive costs a spray and is *already* caught by
 the triage layer, which withholds the dose table below the low-confidence threshold. So
-disease classes are tuned for recall and `healthy` for precision, per class — see
+disease classes are tuned for recall and `healthy` for precision, per class - see
 `ml/tune_thresholds.py`.
 
 ---
 
 ## Training the model
 
-**Never train locally** — the dev machine has 16 GB RAM and very little C: space, and
+**Never train locally** - the dev machine has 16 GB RAM and very little C: space, and
 training belongs on a GPU. Only the exported weights (a few MB) come back down.
 
 Open `ml/notebooks/kaggle_train_potato_yolo.ipynb` on **Kaggle** (GPU T4 ×2, internet on),
@@ -298,14 +298,14 @@ python ml/export_onnx.py      --weights ml/weights/best.pt
 python ml/benchmark_inference.py --model ml/weights/best.onnx
 ```
 
-Then place `ml/weights/` in the repo — `GET /meta/health` stops reporting
+Then place `ml/weights/` in the repo - `GET /meta/health` stops reporting
 `detection_model_missing`, and `GET /detect/status` shows the tuned thresholds in use.
 
 ### What this pipeline does that a stock YOLO tutorial does not
 
 | Concern | How it is handled |
 |---|---|
-| **Class imbalance** | PlantVillage + PlantDoc potato is ~6.4:1 against `healthy` — the class that says *do not spray*. `--cap-train` caps majority classes in the train split only; `--oversample-min` lifts the minority. Measured **6.56:1 → 1.00:1**, printed before and after. |
+| **Class imbalance** | PlantVillage + PlantDoc potato is ~6.4:1 against `healthy` - the class that says *do not spray*. `--cap-train` caps majority classes in the train split only; `--oversample-min` lifts the minority. Measured **6.56:1 → 1.00:1**, printed before and after. |
 | **Split stratification** | Exact per-class quotas assigned by content hash: reproducible across reruns, no train/val leakage, and small classes are raised to ≥20 val images so their metric is a measurement rather than noise. |
 | **Model size** | `yolov8s` by default, not nano. Nano is the least accurate variant, and accuracy matters when a wrong answer means the wrong pesticide. `benchmark_inference.py` measures whether it fits the latency budget rather than assuming it. |
 | **Augmentation** | Geometry augmented freely, colour barely (`hsv_h=0.010`, `flipud=0`). Lesion colour is the signal separating early from late blight; hue jitter would teach the model to ignore it. |
@@ -318,14 +318,14 @@ Then place `ml/weights/` in the repo — `GET /meta/health` stops reporting
 > disease, scores ~0.95+ on its own test split, and degrades on a real phone photo. The
 > pipeline warns loudly when your val split contains zero field images, and `evaluate.py`
 > refuses to present a lab number as field accuracy. **Merge field-condition images before
-> quoting any figure** — see [`ml/DATASETS.md`](ml/DATASETS.md).
+> quoting any figure** - see [`ml/DATASETS.md`](ml/DATASETS.md).
 
 ### The feedback loop
 
 Expert decisions in `/review` write `TrainingSample` rows.
 `python ml/export_feedback.py --out datasets/feedback_01` packages them for the next
 training run, and warns when a batch is too small or dominated by one district. It is
-deliberately a manual step — retraining on unexamined field data is how a model quietly
+deliberately a manual step - retraining on unexamined field data is how a model quietly
 degrades.
 
 ---
@@ -337,16 +337,16 @@ backend/app/
   routers/       detect · risk · advisory · hotspots · sensors · review · followup · dashboard · meta
   services/      detector · weather · risk_models · risk_engine · risk_secondary
                  knowledge_base · advisory · triage · translate · pipeline · geo · taxonomy
-  data/kb/       IPDM knowledge base (human-reviewed markdown — edit this, not the code)
+  data/kb/       IPDM knowledge base (human-reviewed markdown - edit this, not the code)
   models.py      cases · follow-ups · sensor readings · training samples · weather cache
-backend/tests/   101 tests: agronomic models, triage rules, ONNX decoding (fake and
+backend/tests/   153 tests: agronomic models, triage rules, ONNX decoding (fake and
                  real onnxruntime session), per-class thresholds, translation
                  integrity across 4 languages, live-scanner endpoints, full API
 ml/              dataset prep · training · evaluation · threshold tuning · benchmarking
                  ONNX export · feedback export · risk XGBoost
 ml/DATASETS.md   dataset comparison, imbalance analysis, provenance
 ml/notebooks/    Kaggle training notebook (potato, 3 classes, 100 epochs)
-frontend/src/    React app — live scanner, farmer flow, risk page, Leaflet map,
+frontend/src/    React app - live scanner, farmer flow, risk page, Leaflet map,
                  dashboard, review queue
 frontend/src/lib/ yoloDecode (browser mirror of the server decoder) · liveDetector
                  (onnxruntime-web) · frameQuality · stabilizer · i18n
@@ -374,5 +374,5 @@ documented fallbacks to live data.
 
 ## Traceability to the problem statement
 
-See [`docs/PS_TRACEABILITY.md`](docs/PS_TRACEABILITY.md) — every required capability in
+See [`docs/PS_TRACEABILITY.md`](docs/PS_TRACEABILITY.md) - every required capability in
 the official "Expected Solution" text mapped to the code that implements it.

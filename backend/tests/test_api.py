@@ -137,7 +137,7 @@ class TestLiveScanner:
         assert after == before
 
     def test_frame_does_not_retain_the_image(self, client, sample_image):
-        """Frames are throughput, not evidence — keeping them fills the disk."""
+        """Frames are throughput, not evidence - keeping them fills the disk."""
         from app.config import settings
 
         before = len(list(settings.upload_dir.rglob("*.jpg")))

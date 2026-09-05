@@ -9,8 +9,8 @@ weights. See [`DATASETS.md`](DATASETS.md) for which dataset to train on and why.
 
 | Index | Class | Notes |
 |---|---|---|
-| 0 | `potato_early_blight` | *Alternaria solani* — concentric-ring lesions on lower leaves |
-| 1 | `potato_late_blight` | *Phytophthora infestans* — the high-severity, weather-driven one |
+| 0 | `potato_early_blight` | *Alternaria solani* - concentric-ring lesions on lower leaves |
+| 1 | `potato_late_blight` | *Phytophthora infestans* - the high-severity, weather-driven one |
 | 2 | `potato_healthy` | The minority class, and the one that says "do not spray" |
 
 The index order in `data.yaml` is authoritative and must match
@@ -30,13 +30,13 @@ silently mislabels every prediction in production, and nothing will error.
 | `benchmark_inference.py` | Measured CPU latency, for the model-size decision |
 | `export_onnx.py` | Export + verify the output shape the backend expects |
 | `export_feedback.py` | Package expert-validated field cases for the next training run |
-| `train_risk_xgb.py` | Optional secondary risk layer — needs real outbreak data |
+| `train_risk_xgb.py` | Optional secondary risk layer - needs real outbreak data |
 | `weights/` | Drop `best.onnx`, `thresholds.json` here; gitignored |
 
 ## Full run
 
 ```bash
-# 1. Build the dataset — stratified splits, balanced train, per-source val lists
+# 1. Build the dataset - stratified splits, balanced train, per-source val lists
 python ml/prepare_dataset.py \
     --plantvillage /kaggle/input/plantvillage-dataset/color \
     --annotated    /kaggle/input/<field-dataset> \
@@ -46,7 +46,7 @@ python ml/prepare_dataset.py \
 # 2. Train
 python ml/train_yolo.py --data /kaggle/working/potato_yolo/data.yaml --epochs 100
 
-# 3. Evaluate honestly — lab and field side by side
+# 3. Evaluate honestly - lab and field side by side
 python ml/evaluate.py --weights ml/weights/best.pt --data /kaggle/working/potato_yolo/data.yaml
 
 # 4. Tune per-class thresholds
@@ -71,7 +71,7 @@ a wrong answer means the wrong pesticide, so `s` is the default: roughly triple
 the parameters (11.2M vs 3.2M) for a real mAP gain, and still inside the CPU
 latency budget.
 
-Do not take "still fast enough" on trust — `benchmark_inference.py` measures it
+Do not take "still fast enough" on trust - `benchmark_inference.py` measures it
 on your hardware and warns if p95 exceeds 1000 ms. Train `n` as well if you want
 the offline story: ship `s` on the server, `n` in a phone build, and compare
 them directly:
@@ -91,7 +91,7 @@ matters. `flipud=0` because leaves are photographed the right way up.
 `close_mosaic=10` runs the final epochs without mosaic so validation resembles
 real single-image inference.
 
-This matters more than usual because the dataset is small — augmentation is
+This matters more than usual because the dataset is small - augmentation is
 doing real regularisation work, but the *wrong* augmentation on a small dataset
 destroys the signal faster than it regularises.
 
@@ -120,7 +120,7 @@ same. Here they do not:
 | Class | Objective | Reason |
 |---|---|---|
 | `potato_early_blight` | F2 (recall) | Catch it; triage filters the uncertain ones |
-| `potato_late_blight` | F2 (recall) | Fast-moving — a miss costs the field |
+| `potato_late_blight` | F2 (recall) | Fast-moving - a miss costs the field |
 | `potato_healthy` | F0.5 (precision) | Only say "healthy" when sure |
 
 `tune_thresholds.py` runs one inference pass at conf 0.001, then sweeps offline
@@ -137,7 +137,7 @@ a headline figure as field accuracy. See [`DATASETS.md`](DATASETS.md).
 ## Secondary risk layer
 
 `train_risk_xgb.py` exists but ships no model, on purpose. It needs historical
-rows linking weather and field context to confirmed outbreaks — CROPSAP
+rows linking weather and field context to confirmed outbreaks - CROPSAP
 Maharashtra bulletins, ICAR/NCIPM records, or this system's own confirmed cases
 once enough exist. It refuses to train below 200 rows and refuses to save a
 model below 0.6 AUC, because a model fitted on 30 rows would look like machine

@@ -7,7 +7,7 @@ cx=320 cy=320 w=200 h=100 conf=0.88.
 
 It exists so `ortIntegration.test.js` can prove that onnxruntime-web really
 loads and runs a model, and that the browser decoder produces the same box as
-the Python server — without needing a 12 MB trained checkpoint in git.
+the Python server - without needing a 12 MB trained checkpoint in git.
 
 Regenerate it with the same helper the backend tests use:
 
