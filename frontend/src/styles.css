@@ -164,17 +164,6 @@ h1, h2, h3 { line-height: 1.25; }
 }
 .menu-item:hover { background: #f2f5f2; }
 .menu-item.active { background: var(--brand-soft); border-color: #cfe4d8; }
-.menu-item .ico {
-  flex: 0 0 auto;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: #f0f4f1;
-  display: grid;
-  place-items: center;
-  font-size: 21px;
-}
-.menu-item.active .ico { background: #fff; }
 .menu-item .txt { min-width: 0; }
 .menu-item .txt b { display: block; font-size: 16px; font-weight: 600; }
 .menu-item .txt small { display: block; color: var(--muted); font-size: 13px; }

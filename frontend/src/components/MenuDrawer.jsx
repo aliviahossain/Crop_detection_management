@@ -8,17 +8,17 @@ export const MENU_GROUPS = [
   {
     labelKey: 'menu.farmer',
     items: [
-      { to: '/check', icon: '📷', key: 'nav.check' },
-      { to: '/scan', icon: '🎥', key: 'nav.scan' },
-      { to: '/risk', icon: '🌦️', key: 'nav.risk' },
+      { to: '/check', key: 'nav.check' },
+      { to: '/scan', key: 'nav.scan' },
+      { to: '/risk', key: 'nav.risk' },
     ],
   },
   {
     labelKey: 'menu.officer',
     items: [
-      { to: '/map', icon: '🗺️', key: 'nav.map' },
-      { to: '/dashboard', icon: '📊', key: 'nav.dashboard' },
-      { to: '/review', icon: '✅', key: 'nav.review' },
+      { to: '/map', key: 'nav.map' },
+      { to: '/dashboard', key: 'nav.dashboard' },
+      { to: '/review', key: 'nav.review' },
     ],
   },
 ]
@@ -64,9 +64,6 @@ export default function MenuDrawer({ open, onClose }) {
                   onClick={onClose}
                   className={({ isActive }) => `menu-item${isActive ? ' active' : ''}`}
                 >
-                  <span className="ico" aria-hidden="true">
-                    {item.icon}
-                  </span>
                   <span className="txt">
                     <b>{t(item.key)}</b>
                     <small>{t(`${item.key}.desc`)}</small>
