@@ -35,6 +35,9 @@ export const api = {
   detectThresholds: () => request('/detect/thresholds'),
   modelUrl: () => `${BASE}/detect/model`,
 
+  // Proactive farmer home alert: weather scouting + nearby-outbreak pressure.
+  homeOverview: (params) => request(`/home/overview?${new URLSearchParams(params)}`),
+
   risk: (payload) => request('/risk', json(payload)),
   riskModels: () => request('/risk/models'),
   weather: (params) => request(`/risk/weather?${new URLSearchParams(params)}`),

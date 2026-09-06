@@ -224,6 +224,44 @@ h1, h2, h3 { line-height: 1.25; }
 .stat .label { color: var(--ink); font-size: 14px; margin-top: 4px; font-weight: 550; }
 .stat .hint { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
 
+/* ---------- home overview (proactive alert) ---------- */
+.home-hero {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 18px 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  border-left-width: 6px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.home-hero h2 { font-size: 20px; }
+.home-hero p { color: var(--ink); font-size: 15.5px; }
+.home-hero .home-dot {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 6px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.04);
+}
+.home-hero.low { border-left-color: var(--low); background: #f1f8f3; }
+.home-hero.low .home-dot { background: var(--low); }
+.home-hero.medium { border-left-color: var(--medium); background: #fdf7ea; }
+.home-hero.medium .home-dot { background: var(--medium); }
+.home-hero.high { border-left-color: var(--high); background: #fdefed; }
+.home-hero.high .home-dot { background: var(--high); }
+
+.home-hint {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-weight: 550;
+}
+.home-card.accent { border-left: 4px solid var(--high); }
+.home-stat { font-size: 17px; font-weight: 600; margin: 0 0 4px; }
+
 /* ---------- forms ---------- */
 label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 5px; font-weight: 550; }
 input, select, textarea {

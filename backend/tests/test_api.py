@@ -573,3 +573,181 @@ class TestDataSourceFilter:
         ).json()
         assert both["cases"]["total"] == 2
         assert live["cases"]["total"] == 1
+
+
+def _seed_confirmed_late_blight(*, lat, lon, village="Neighbourwadi"):
+    """A single expert-confirmed late-blight case at a precise coordinate, so the
+    cross-farm propagation test can place inoculum a known distance away."""
+    from datetime import datetime, timezone
+
+    from app.database import SessionLocal
+    from app.models import Case, CaseSource, ReviewStatus
+    from app.services.geo import geo_cell
+
+    db = SessionLocal()
+    try:
+        db.add(
+            Case(
+                source=CaseSource.IMAGE,
+                crop="potato",
+                village=village,
+                latitude=lat,
+                longitude=lon,
+                geo_cell=geo_cell(lat, lon),
+                predicted_class="potato_late_blight",
+                confirmed_class="potato_late_blight",
+                confidence=0.8,
+                review_status=ReviewStatus.CONFIRMED,
+                reviewer="TAO",
+                reviewed_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+
+def _seed_confirmed_disease(*, lat, lon, cls):
+    """A confirmed case of a given disease class at a coordinate, for the
+    most-common-disease breakdown test."""
+    from datetime import datetime, timezone
+
+    from app.database import SessionLocal
+    from app.models import Case, CaseSource, ReviewStatus
+    from app.services.geo import geo_cell
+
+    db = SessionLocal()
+    try:
+        db.add(
+            Case(
+                source=CaseSource.IMAGE,
+                crop="potato",
+                latitude=lat,
+                longitude=lon,
+                geo_cell=geo_cell(lat, lon),
+                predicted_class=cls,
+                confirmed_class=cls,
+                confidence=0.8,
+                review_status=ReviewStatus.CONFIRMED,
+                reviewer="TAO",
+                reviewed_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+
+def _seed_demo_late_blight(*, lat, lon):
+    """A confirmed late-blight case marked as seeded demo data, to prove the
+    home page's live/demo switch drops it exactly as the map's switch does."""
+    from datetime import datetime, timezone
+
+    from app.database import SessionLocal
+    from app.models import Case, CaseSource, ReviewStatus
+    from app.services.geo import geo_cell
+
+    db = SessionLocal()
+    try:
+        db.add(
+            Case(
+                source=CaseSource.IMAGE,
+                crop="potato",
+                village="Demoville",
+                latitude=lat,
+                longitude=lon,
+                geo_cell=geo_cell(lat, lon),
+                predicted_class="potato_late_blight",
+                confirmed_class="potato_late_blight",
+                confidence=0.8,
+                model_version="demo-seed",
+                review_status=ReviewStatus.CONFIRMED,
+                reviewer="TAO",
+                reviewed_at=datetime.now(timezone.utc),
+                farmer_name="Demo Farmer",
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+
+class TestHomeOverview:
+    """The farmer home traffic light: weather-driven scouting + cross-farm
+    outbreak pressure, collapsed into one 'walk your field today?' answer."""
+
+    # A quiet corner of the map with no seeded cases, so this test owns its data.
+    SPOT = {"latitude": 20.90, "longitude": 77.75}
+
+    def test_overview_has_a_traffic_light_and_both_halves(self, client):
+        d = client.get("/home/overview", params=self.SPOT).json()
+        assert d["status"] in {"calm", "watch", "act"}
+        assert d["action"] in {"none", "watch", "take_photo"}
+        # Both signals are always present and machine-readable for the frontend.
+        assert d["scouting"]["urgency"] in {"calm", "watch", "act"}
+        assert d["nearby"]["level"] in {"none", "low", "elevated", "high"}
+        # No image was involved; this is the proactive, weather-first path.
+        assert d["data_thin"] is True  # synthetic weather feed in tests
+
+    def test_no_nearby_cases_reads_as_none(self, client):
+        near = client.get("/home/overview", params=self.SPOT).json()["nearby"]
+        assert near["confirmed_count"] == 0
+        assert near["level"] == "none"
+        assert near["prior_shift"] == 0.0
+
+    def test_confirmed_case_upwind_raises_the_alert_to_act(self, client):
+        # Drop two confirmed late-blight cases ~1 km away, inside the close band.
+        _seed_confirmed_late_blight(lat=20.906, lon=77.754)
+        _seed_confirmed_late_blight(lat=20.904, lon=77.752)
+
+        d = client.get("/home/overview", params=self.SPOT).json()
+        near = d["nearby"]
+        assert near["confirmed_count"] == 2
+        assert near["close_confirmed_count"] == 2
+        assert near["level"] == "high"
+        assert 0 < near["pressure"] <= 1.0
+        # Propagation must raise urgency to a scout-today action, and own the
+        # headline, even though the farmer has detected nothing themselves.
+        assert d["status"] == "act"
+        assert d["action"] == "take_photo"
+        assert d["primary_reason"] == "nearby_outbreak"
+        # A blight is fungal, so the morning-photo hint is on.
+        assert d["time_hint"] == "this_morning"
+        # Privacy: neighbours are aggregated to a count, never named individually.
+        assert near["villages"] >= 1
+        assert "case_id" not in near and "cases" not in near
+
+    def test_pressure_is_capped_and_honest(self, client):
+        # The neighbour prior can never exceed the ±0.20 ceiling the secondary
+        # layer is held to -- it refines, it does not fabricate a detection.
+        from app.services import home_overview as ho
+
+        near = client.get("/home/overview", params=self.SPOT).json()["nearby"]
+        assert near["prior_shift"] <= ho.PROPAGATION_PRIOR_CAP
+
+    def test_prevalent_disease_names_the_dominant_class(self, client):
+        # An area with 2 confirmed early blight and 1 confirmed late blight.
+        area = {"latitude": 16.80, "longitude": 74.60}
+        _seed_confirmed_disease(lat=16.802, lon=74.601, cls="potato_early_blight")
+        _seed_confirmed_disease(lat=16.803, lon=74.602, cls="potato_early_blight")
+        _seed_confirmed_disease(lat=16.804, lon=74.603, cls="potato_late_blight")
+
+        prev = client.get("/home/overview", params=area).json()["prevalent"]
+        assert prev["dominant_class"] == "potato_early_blight"
+        assert prev["by_class"]["potato_early_blight"]["confirmed"] == 2
+        assert prev["by_class"]["potato_late_blight"]["confirmed"] == 1
+        # Healthy is not a disease and must never be counted here.
+        assert "potato_healthy" not in prev["by_class"]
+
+    def test_live_only_switch_excludes_demo_cases(self, client):
+        # A quiet spot with only a seeded demo case nearby.
+        spot = {"latitude": 16.40, "longitude": 74.20}
+        _seed_demo_late_blight(lat=16.402, lon=74.201)
+
+        demo = client.get("/home/overview", params={**spot, "include_demo": True}).json()
+        live = client.get("/home/overview", params={**spot, "include_demo": False}).json()
+        assert demo["include_demo"] is True and live["include_demo"] is False
+        # Demo view sees the seeded case; live-only drops it.
+        assert demo["nearby"]["confirmed_count"] == 1
+        assert live["nearby"]["confirmed_count"] == 0
+        assert live["nearby"]["level"] == "none"

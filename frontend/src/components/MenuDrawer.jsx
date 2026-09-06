@@ -8,6 +8,7 @@ export const MENU_GROUPS = [
   {
     labelKey: 'menu.farmer',
     items: [
+      { to: '/', key: 'nav.home' },
       { to: '/check', key: 'nav.check' },
       { to: '/scan', key: 'nav.scan' },
       { to: '/risk', key: 'nav.risk' },
@@ -61,6 +62,7 @@ export default function MenuDrawer({ open, onClose }) {
                 <NavLink
                   key={item.to}
                   to={item.to}
+                  end={item.to === '/'}
                   onClick={onClose}
                   className={({ isActive }) => `menu-item${isActive ? ' active' : ''}`}
                 >

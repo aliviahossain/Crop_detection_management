@@ -4,6 +4,7 @@ import { LANGUAGES, LangContext, useLang, useT } from './lib/i18n.js'
 import { api } from './lib/api.js'
 import MenuDrawer from './components/MenuDrawer.jsx'
 import ChatBot from './components/ChatBot.jsx'
+import HomePage from './pages/HomePage.jsx'
 import FarmerPage from './pages/FarmerPage.jsx'
 import ScanPage from './pages/ScanPage.jsx'
 import RiskPage from './pages/RiskPage.jsx'
@@ -107,7 +108,7 @@ export default function App() {
         <MenuDrawer open={menuOpen} onClose={closeMenu} />
         <HealthBanner />
         <Routes>
-          <Route path="/" element={<Navigate to="/check" replace />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/scan" element={<ScanPage />} />
           <Route path="/check" element={<FarmerPage />} />
           <Route path="/risk" element={<RiskPage />} />

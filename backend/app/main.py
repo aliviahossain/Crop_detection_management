@@ -22,6 +22,7 @@ from app.routers import (
     dashboard,
     detect,
     followup,
+    home,
     hotspots,
     meta,
     review,
@@ -42,6 +43,8 @@ Farmer- and extension-worker-facing crop health system for **potato**
   with an IPDM advisory and a safety triage decision.
 * `POST /risk` - weather-driven forecast with no image, using published
   agronomic models (Smith Period, Beaumont Period, TOMCAST DSV, degree-days).
+* `GET /home/overview` - proactive farmer home alert: the weather forecast plus
+  cross-farm outbreak pressure, collapsed into one "scout today?" traffic light.
 * `POST /advisory` - IPDM recommendations retrieved from a human-reviewed
   knowledge base, in English, Marathi or Hindi.
 * `GET /hotspots` - geospatial clustering of confirmed cases.
@@ -76,7 +79,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for r in (detect, risk, advisory, hotspots, sensors, review, followup, dashboard, meta, chat):
+for r in (detect, risk, advisory, home, hotspots, sensors, review, followup, dashboard, meta, chat):
     app.include_router(r.router)
 
 # Uploaded field photos, so the review queue can display them.
