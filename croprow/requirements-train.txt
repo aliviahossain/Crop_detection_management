@@ -1,0 +1,36 @@
+# croprow training / inference stack (notebooks 03-07).
+#
+# Install into a SEPARATE Python 3.11 virtualenv with numpy<2 -- do NOT install
+# into the potato backend's .venv (it uses numpy 2 + the serving stack). See
+# croprow/README.md for the exact steps.
+#
+#   py -3.11 -m venv croprow/.venv
+#   croprow/.venv/Scripts/activate         # Windows
+#   pip install -r croprow/requirements-train.txt
+
+numpy<2
+opencv-python
+matplotlib
+pyyaml
+pandas                 # 07 comparison table
+
+ultralytics>=8.3.0     # provides YOLO11n + ByteTrack
+onnx                   # 07 ONNX export
+onnxruntime            # 07 ONNX benchmark (use onnxruntime-gpu on CUDA)
+
+# PyTorch: install the build that matches your machine from pytorch.org.
+#   CPU only : pip install torch torchvision
+#   CUDA 12.1: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+torch
+torchvision
+
+# TensorRT FP16 export (07) needs an NVIDIA GPU. `yolo export format=engine`
+# pulls the right tensorrt wheel; it is skipped cleanly on CPU-only machines.
+
+# For running the notebooks:
+jupyter
+ipykernel
+
+# NOTE: notebooks 01 and 02 need only numpy<2 / opencv / matplotlib / pyyaml /
+# jupyter -- torch and ultralytics are NOT required for dataset prep or the
+# label-visualization step.
