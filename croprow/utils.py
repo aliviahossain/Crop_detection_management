@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import os
 import random
+import shutil
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -366,6 +367,68 @@ _RESULTS_HEADER = (
     "| " + " | ".join(RESULTS_COLUMNS) + " |\n"
     "| " + " | ".join("---" for _ in RESULTS_COLUMNS) + " |\n"
 )
+
+
+def package_dataset(
+    root: Path,
+    out_dir: Path,
+    train_seqs: Sequence[str],
+    val_seqs: Sequence[str],
+    copy_images: bool = True,
+) -> dict:
+    """Build a portable, drop-in YOLO detection dataset under ``out_dir``.
+
+    Layout (standard Ultralytics, labels mirror images)::
+
+        <out_dir>/images/train/<seq>/<frame>.png
+        <out_dir>/images/val/<seq>/<frame>.png
+        <out_dir>/labels/train/<seq>/<frame>.txt   # "0 cx cy w h"
+        <out_dir>/labels/val/<seq>/<frame>.txt
+        <out_dir>/data.yaml
+
+    Box labels are derived from the LettuceMOTS polygons here, so the bundle is
+    self-contained and does not depend on the converted labels from 01. The
+    written ``data.yaml`` uses an absolute ``path`` (correct on this machine);
+    ship ``set_yaml_path.py`` alongside so the trainer repoints it after unzip.
+    Returns a manifest dict.
+    """
+    root = Path(root)
+    out = Path(out_dir)
+    manifest: dict = {"out_dir": str(out.resolve()), "splits": {}}
+
+    for split, seqs in (("train", list(train_seqs)), ("val", list(val_seqs))):
+        n_img = n_box = 0
+        for seq in seqs:
+            img_out = out / "images" / split / seq
+            lab_out = out / "labels" / split / seq
+            img_out.mkdir(parents=True, exist_ok=True)
+            lab_out.mkdir(parents=True, exist_ok=True)
+            for img, lab in frame_pairs(root, seq):
+                if copy_images:
+                    shutil.copy2(img, img_out / img.name)
+                boxes = [b for b in (line_to_bbox(r) for r in _read_label_lines(lab)) if b]
+                (lab_out / (img.stem + ".txt")).write_text(
+                    "".join(f"{c} {cx:.6f} {cy:.6f} {w:.6f} {h:.6f}\n"
+                            for c, cx, cy, w, h in boxes)
+                )
+                n_img += 1
+                n_box += len(boxes)
+        manifest["splits"][split] = {
+            "sequences": seqs, "images": n_img, "boxes": n_box,
+        }
+
+    yaml_path = out / "data.yaml"
+    data = {
+        "path": str(out.resolve()),
+        "train": "images/train",
+        "val": "images/val",
+        "nc": 1,
+        "names": list(CLASS_NAMES),
+    }
+    with yaml_path.open("w") as fh:
+        yaml.safe_dump(data, fh, sort_keys=False)
+    manifest["data_yaml"] = str(yaml_path.resolve())
+    return manifest
 
 
 def append_results_row(

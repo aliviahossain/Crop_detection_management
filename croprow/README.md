@@ -68,10 +68,27 @@ pytorch.org). A GPU is strongly recommended for training.
 | 05 | `05_evaluate`      | ready   | LettuceMOTS-val and own-frames metrics, **separate tables** |
 | 06 | `06_detect_video`  | ready   | detect + ByteTrack IDs + live FPS → annotated mp4; ffmpeg sequence→mp4 helper |
 | 07 | `07_speed`         | ready   | ONNX + TensorRT FP16 export; benchmark imgsz 640/512/416 |
+| 08 | `08_package_dataset` | ready | build a portable, drop-in YOLO dataset bundle for a trainer (see below) |
 
 01 and 02 are already executed (outputs saved in the notebooks). 03–07 ship
 **unrun** — whoever trains runs them; they stop with a clear message if weights
 or your frames are missing rather than fabricating a fallback.
+
+## Handing the dataset to someone else to train
+
+The git repo does **not** contain the images or labels (they live outside it),
+and `data/train.txt` / `data/val.txt` hold absolute paths from the machine that
+ran 01 — so cloning the repo alone is not enough to train. Two options:
+
+- **They run 01 themselves.** Send them the LettuceMOTS dataset, they set
+  `LETTUCE_ROOT` and run `01_dataset_prep` (regenerates the lists, the data
+  yaml, and the box `labels/` for their paths), then `03_train`.
+- **Send a portable bundle** (`08_package_dataset`). Produces a self-contained
+  folder — `images/{train,val}/`, mirrored `labels/{train,val}/`, `data.yaml`,
+  plus `set_yaml_path.py` and `README_TRAIN.md`. The trainer unzips it, runs
+  `python set_yaml_path.py` once (repoints `data.yaml`'s `path:`), and trains
+  directly with `yolo detect train data=data.yaml model=yolo11n.pt`. Split is
+  identical to 01; ~1.1 GB of images. The bundle is data, not committed to git.
 
 ## Speed target
 
