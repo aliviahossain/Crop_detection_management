@@ -5,6 +5,8 @@ __pycache__/
 venv/
 *.egg-info/
 .pytest_cache/
+*.mp4
+
 
 # Env / secrets
 .env
@@ -57,4 +59,4 @@ frames/
 # runs/, *.pt, *.onnx and .venv/ are already ignored above (covers
 # croprow/.venv/ and any exported croprow weights). Allow tracked weights
 # that are deliberately dropped into croprow/models/:
-!croprow/models/*.pt
+croprow/models/*.pt
