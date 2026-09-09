@@ -264,7 +264,37 @@ export default function HomePage() {
               )}
             </section>
           </div>
+          <h3 style={{ marginTop: 0 }}>Quick Actions</h3>
 
+<div className="inline">
+  <button
+    className="primary auto"
+    onClick={() => navigate('/scan')}
+  >
+    Scan Crop
+  </button>
+
+  <button
+    className="ghost"
+    onClick={() => navigate('/risk')}
+  >
+    Check Risk
+  </button>
+
+  <button
+    className="ghost"
+    onClick={() => navigate('/map')}
+  >
+    View Map
+  </button>
+
+  <button
+    className="ghost"
+    onClick={() => navigate('/dashboard')}
+  >
+    Open Dashboard
+  </button>
+</div>
           <p className="muted small">{t('home.disclaimer')}</p>
 
           <div className="inline">
