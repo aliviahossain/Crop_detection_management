@@ -1,0 +1,5 @@
+train: D:\SIH_REAL\Crop_detection_management\croprow\data\train.txt
+val: D:\SIH_REAL\Crop_detection_management\croprow\data\val.txt
+nc: 1
+names:
+- lettuce
