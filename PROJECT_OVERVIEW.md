@@ -33,6 +33,7 @@ CropGuard Maharashtra is a proactive crop-health platform for farmers and agricu
 
 **For farmers**
 
+- **Proactive daily alert ("Today" home screen)** — the app opens on a single traffic light that answers *"should I walk my field today?"* before the farmer scans anything. It fuses the weather forecast with **cross-farm outbreak propagation** (a confirmed blight upwind raises your risk before you have detected anything yourself), tells you the **most common disease in your area**, and — when risk is high — says to **photograph your plants this morning**. A demo/live switch and a location picker let it be shown from any device.
 - **On-device camera scanning** for instant disease detection — runs live, in-browser, with no per-frame server call.
 - **Photo upload** as an alternative to live scanning, routed through the same safety pipeline.
 - **Weather-driven forecasting** that predicts disease risk *before* symptoms appear.
@@ -120,12 +121,13 @@ Technologies grouped by domain.
 
 ## 5. How It Works
 
-1. Farmers use the **live scanner** or **upload a photo**, or the system runs a **proactive weather check** with no image at all.
-2. The backend assesses the image and weather data, routing every case — photo-triggered or proactive — through a single **safety triage** gate in `pipeline.py`, so a weather alert cannot bypass a rule a photo case obeys.
-3. The system **retrieves guidance from a human-reviewed knowledge base** to generate a localized advisory, returning the exact KB sections it drew from as citations.
-4. The **live camera filters out blurry frames** (variance-of-Laplacian blur and exposure scoring) and requires a **consensus of multiple clear frames** — default 6 of 10 good frames at ≥55% mean confidence — before issuing a verdict, preventing false alarms from a single lucky frame.
-5. Nothing is stored until the farmer presses **Accept**, which sends that exact frame through the full `/detect` pipeline — same advisory, same triage, same follow-up as a photo upload. Discarded scans leave no record.
-6. An **officer reviews** the case, confirming or correcting the diagnosis; a confirmed case becomes a training sample, and a failed follow-up auto-escalates the case.
+1. Opening the app lands on the **"Today" home alert** (`GET /home/overview`): a single call combines the weather forecast, cross-farm outbreak pressure and the area's most common disease into one traffic light — *calm / watch / act* — so a farmer sees whether to inspect the field before touching the camera.
+2. Farmers use the **live scanner** or **upload a photo**, or the system runs a **proactive weather check** with no image at all.
+3. The backend assesses the image and weather data, routing every case — photo-triggered or proactive — through a single **safety triage** gate in `pipeline.py`, so a weather alert cannot bypass a rule a photo case obeys.
+4. The system **retrieves guidance from a human-reviewed knowledge base** to generate a localized advisory, returning the exact KB sections it drew from as citations.
+5. The **live camera filters out blurry frames** (variance-of-Laplacian blur and exposure scoring) and requires a **consensus of multiple clear frames** — default 6 of 10 good frames at ≥55% mean confidence — before issuing a verdict, preventing false alarms from a single lucky frame.
+6. Nothing is stored until the farmer presses **Accept**, which sends that exact frame through the full `/detect` pipeline — same advisory, same triage, same follow-up as a photo upload. Discarded scans leave no record.
+7. An **officer reviews** the case, confirming or correcting the diagnosis; a confirmed case becomes a training sample, and a failed follow-up auto-escalates the case.
 
 ---
 
@@ -133,6 +135,7 @@ Technologies grouped by domain.
 
 - **Safety First.** Extracts chemical guidelines strictly from human-reviewed markdown tables instead of letting AI hallucinate pesticide doses. The safety block is attached in a separate pipeline node *after* composition, so no path can accidentally omit it.
 - **Hyperlocal microclimate sensing (experimental).** Turns the phone's live camera into a passive, in-field **airflow** proxy: classical pixel math cancels camera shake and reads the independent leaf motion that survives, grading canopy airflow as *still / light / breezy* — a signal a distant weather station cannot see. Still air means dew lingers, so **leaf wetness** stretches, which is exactly the input the Smith Period (≥11 h) and TOMCAST blight models read; the reading feeds risk where it actually matters, on today and forecast days that already had dew. Paired with soil-drainage and waterlogging modelling (a waterlogged canopy stays wet longer → higher blight pressure), it localises forecasting to the plant in front of the farmer. An honesty guardrail keeps it safe: a breeze may *raise* concern but can never "un-fire" a blight rule that already met the observed humidity, and every airflow adjustment is recorded as experimental and auditable.
+- **Surveillance, not just diagnosis.** Every other detector waits for the farmer to notice something wrong — by then it is often too late. The **"Today" home alert** flips that: it tells the farmer *when to look*, before a symptom is visible. Two proactive signals drive it. First, **weather-timed scouting** — when the published Smith/Beaumont/TOMCAST models fire, the app pushes *"photograph your plants this morning, while dew is on the leaf"* rather than sitting idle until a photo arrives. Second, **cross-farm outbreak propagation** — because *Phytophthora infestans* spreads by wind-dispersed sporangia, an expert-confirmed late blight case a short distance away raises a neighbour's risk *automatically, before they have detected anything*. A distance-decayed infection pressure (Gaussian kernel, 2 km close band, 5 km reach) elevates the alert, capped at ±0.20 like the XGBoost layer — it can raise urgency but **never fabricates a detection**, and neighbours are aggregated to a count, never named. The card also reports the **most common disease in the area** (15 km, confirmed weighed above unreviewed, exactly as the hotspot map ranks a cell), and carries the same **live / demo** switch as the officer views so it can be demonstrated from any device.
 - **Offline Ready.** Runs live camera scanning and multilingual advisories (Marathi, Hindi, Bengali) offline without expensive API calls. The WASM runtime is served from the app's own origin — not a CDN — precisely so the offline claim is real.
 - **Honest AI.** Explicitly separates broken components (`degraded`) from deliberate design limitations (`by_design`) on the dashboard, so a judge, officer, or teammate never has to guess whether a number came from a real model or a fallback. Nothing fabricates a result to look complete.
 - **A learning flywheel that improves in the field.** Every case an officer confirms or corrects in the review queue becomes a labelled `TrainingSample`, so the system's own field verdicts turn into training data for the next model — directly satisfying the PS's "learns from field confirmations". `ml/export_feedback.py` packages these for a retraining run and warns when a batch is too small or skewed to one district, and the XGBoost risk layer stays dormant until enough confirmed cases exist to train it honestly. The retrain is a **deliberate, human-in-the-loop step, not blind auto-training** — because retraining on unexamined field data is how a model quietly degrades. The AI gets better as it is used, without ever being allowed to teach itself something wrong.
@@ -147,6 +150,7 @@ Technologies grouped by domain.
 
 | Screen | File to add | What it shows |
 |---|---|---|
+| Today / Home Alert | `docs/screenshots/home.png` | Proactive traffic light: weather scouting, nearby outbreaks, most common disease, live/demo switch |
 | Live Scan | `docs/screenshots/live-scan.png` | On-device camera scanning with the quality/consensus HUD |
 | Photo Check + Advisory | `docs/screenshots/advisory.png` | Detection result, triage verdict, and localized IPDM advice |
 | Risk Forecast | `docs/screenshots/risk.png` | Smith / Beaumont / TOMCAST output before symptoms appear |
