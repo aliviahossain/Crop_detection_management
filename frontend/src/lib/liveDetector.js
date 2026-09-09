@@ -29,8 +29,19 @@ export const MODE = {
   UNAVAILABLE: 'unavailable',
 }
 
+// The detector talks to one model's four endpoints. Potato (/detect) is the
+// default so the disease scanner is unchanged; the CropRow lab passes the
+// /croprow variants. Same decode, different weights and class list.
+const POTATO_ENDPOINTS = {
+  thresholds: () => api.detectThresholds(),
+  modelUrl: () => api.modelUrl(),
+  status: () => api.detectStatus(),
+  frame: (form) => api.detectFrame(form),
+}
+
 export class LiveDetector {
-  constructor() {
+  constructor(endpoints = POTATO_ENDPOINTS) {
+    this.endpoints = { ...POTATO_ENDPOINTS, ...endpoints }
     this.session = null
     this.inputName = null
     this.mode = MODE.UNAVAILABLE
@@ -47,7 +58,7 @@ export class LiveDetector {
   async init() {
     // Thresholds first: needed by both paths, and it tells us the class order.
     try {
-      const cfg = await api.detectThresholds()
+      const cfg = await this.endpoints.thresholds()
       this.classNames = cfg.classes || []
       this.thresholds = cfg.per_class || {}
       this.defaultThreshold = cfg.default ?? 0.25
@@ -64,7 +75,7 @@ export class LiveDetector {
       ort.env.wasm.numThreads = 1 // no cross-origin isolation headers in dev
       ort.env.logLevel = 'error'
 
-      const response = await fetch(api.modelUrl())
+      const response = await fetch(this.endpoints.modelUrl())
       if (!response.ok) {
         this.note =
           response.status === 404
@@ -94,7 +105,7 @@ export class LiveDetector {
   async _fallback() {
     // Confirm the server can actually infer before promising that path.
     try {
-      const status = await api.detectStatus()
+      const status = await this.endpoints.status()
       this.mode = status.available ? MODE.SERVER : MODE.UNAVAILABLE
       if (!status.available) this.note = status.note || 'No detection model installed.'
     } catch {
@@ -183,7 +194,7 @@ export class LiveDetector {
     const started = performance.now()
     const form = new FormData()
     form.append('image', blob, 'frame.jpg')
-    const result = await api.detectFrame(form)
+    const result = await this.endpoints.frame(form)
     const detections = (result.detections || []).map((d) => ({
       classKey: d.class_key,
       confidence: d.confidence,

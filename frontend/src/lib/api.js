@@ -35,6 +35,12 @@ export const api = {
   detectThresholds: () => request('/detect/thresholds'),
   modelUrl: () => `${BASE}/detect/model`,
 
+  // CropRow lab: single-class crop localization, its own weights, no case/DB.
+  croprowStatus: () => request('/croprow/status'),
+  croprowFrame: (formData) => request('/croprow/frame', { method: 'POST', body: formData }),
+  croprowThresholds: () => request('/croprow/thresholds'),
+  croprowModelUrl: () => `${BASE}/croprow/model`,
+
   // Proactive farmer home alert: weather scouting + nearby-outbreak pressure.
   homeOverview: (params) => request(`/home/overview?${new URLSearchParams(params)}`),
 

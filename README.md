@@ -28,6 +28,13 @@ That is a deliberate choice, not a shortcut:
 Adding a crop is a dataset-and-retrain task: extend `ml/data.yaml`,
 `backend/app/services/taxonomy.py`, and the knowledge base. No architectural change.
 
+A **second, separate detector** lives under the menu's *In the lab · beta* group:
+**Crop row scan** ([`croprow/`](croprow/)), a single-class crop (lettuce) *localizer*
+for a cultivator-mounted camera. It is deliberately walled off from the potato
+disease stack - its own weights, its own `/croprow` endpoints, its own class list -
+and is an in-development preview, not a shipped tool. See
+[The CropRow lab](#8-the-croprow-lab-a-separate-in-development-detector) below.
+
 ## Honesty about what is real
 
 The system reports its own degraded components at `GET /meta/health`, and the UI shows a
@@ -86,8 +93,9 @@ Tests:
 pip install -r backend/requirements-dev.txt
 pytest backend/tests -q      # 153 tests, no network, no trained model needed
 
-cd frontend && npm test      # 50 tests: browser decoder parity, quality gate,
-                             # verdict stabilizer, real onnxruntime-web run
+cd frontend && npm test      # 54 tests: browser decoder parity, quality gate,
+                             # verdict stabilizer, unique plant tracker,
+                             # real onnxruntime-web run
 ```
 
 Optional extras. Each has a tested fallback, so none is required - but installing them
@@ -128,6 +136,7 @@ synthetic backfill that the response reports explicitly.
 │ POST /detect     │ YOLOv8s via ONNX Runtime (CPU) → class + confidence + bbox
 │ POST /detect/frame │ Stateless per-frame inference for the live scanner
 │ GET  /detect/model │ Serves the ONNX so the browser can infer on-device
+│ /croprow/*       │ CropRow lab (beta): separate single-class crop localizer for video
 │ POST /risk       │ Smith / Beaumont / TOMCAST / degree-days + OpenWeatherMap
 │ POST /advisory   │ LangGraph pipeline over a human-reviewed IPDM knowledge base
 │ GET  /hotspots   │ Geo-grid aggregation, confirmed cases weighted above unverified
@@ -274,6 +283,35 @@ the triage layer, which withholds the dose table below the low-confidence thresh
 disease classes are tuned for recall and `healthy` for precision, per class - see
 `ml/tune_thresholds.py`.
 
+### 8. The CropRow lab: a separate, in-development detector
+
+Under the menu's *In the lab · beta* group, **Crop row scan** answers a different
+question from the rest of the app - *where are the crop plants* for a
+cultivator-mounted camera, not *what disease is this*. It is a single-class
+(lettuce) localizer kept deliberately apart from the potato stack: its own
+weights in [`croprow/`](croprow/), its own `/croprow` endpoints, its own class
+list, no case, no advisory, no database write.
+
+- **Two inputs, one detector.** A live camera (the same camera picker as Live
+  scan) or an uploaded video clip, both drawing boxes as the footage plays.
+- **A unique count that does not double-count.** Per-frame boxes carry no
+  identity, so summing them would count a plant once per frame it is visible.
+  A lightweight IoU tracker (`frontend/src/lib/plantTracker.js`) matches each
+  frame's boxes to the previous frame's and ticks the total up only for a
+  genuinely new plant. It is geometry-only, so a plant that leaves and returns is
+  counted again - the UI says so, and the behaviour is pinned by tests.
+- **The same honest serving story.** On-device ONNX from `GET /croprow/model` is
+  preferred (offline, no per-frame server call), falling back to `/croprow/frame`
+  and then to a clear "model not installed" message. Weights are not committed -
+  export the trained model once with `python croprow/export_onnx.py`.
+- **Browser-playable video.** Browsers cannot decode the LettuceMOTS clips'
+  MPEG-4 Part 2 codec, so `croprow/convert_videos.py` transcodes them to H.264
+  and `croprow/generate_video.py` now writes H.264 directly.
+
+This is an **in-development** module by design: the croprow training notebooks
+(03-07) ship unrun, and the feature is grouped under "In the lab · beta" so it
+reads as a preview.
+
 ---
 
 ## Training the model
@@ -347,9 +385,13 @@ ml/              dataset prep · training · evaluation · threshold tuning · b
 ml/DATASETS.md   dataset comparison, imbalance analysis, provenance
 ml/notebooks/    Kaggle training notebook (potato, 3 classes, 100 epochs)
 frontend/src/    React app - live scanner, farmer flow, risk page, Leaflet map,
-                 dashboard, review queue
+                 dashboard, review queue, CropRow lab (beta)
 frontend/src/lib/ yoloDecode (browser mirror of the server decoder) · liveDetector
-                 (onnxruntime-web) · frameQuality · stabilizer · i18n
+                 (onnxruntime-web, parameterised per model) · plantTracker (unique
+                 plant counting) · frameQuality · stabilizer · i18n
+croprow/         CropRow lab (in development): a single-class crop (lettuce) localizer,
+                 separate from ml/ - training notebooks, best.pt, export_onnx.py,
+                 convert_videos.py + generate_video.py (H.264) video helpers
 scripts/         demo data seeding · risk-dataset export for the XGBoost layer
 docs/            architecture notes and PS traceability matrix
 ```

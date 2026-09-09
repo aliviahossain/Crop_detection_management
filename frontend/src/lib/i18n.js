@@ -23,6 +23,12 @@ const STRINGS = {
   'menu.language': { en: 'Language', mr: 'भाषा', hi: 'भाषा', bn: 'ভাষা' },
   'menu.farmer': { en: 'For farmers', mr: 'शेतकऱ्यांसाठी', hi: 'किसानों के लिए', bn: 'কৃষকদের জন্য' },
   'menu.officer': { en: 'For officers', mr: 'अधिकाऱ्यांसाठी', hi: 'अधिकारियों के लिए', bn: 'কর্মকর্তাদের জন্য' },
+  'menu.lab': {
+    en: 'In the lab · beta',
+    mr: 'प्रयोगशाळेत · बीटा',
+    hi: 'प्रयोगशाला में · बीटा',
+    bn: 'ল্যাবে · বিটা',
+  },
 
   'nav.home': { en: 'Today', mr: 'आज', hi: 'आज', bn: 'আজ' },
   'nav.home.desc': {
@@ -72,6 +78,13 @@ const STRINGS = {
     mr: 'निदान पडताळा',
     hi: 'निदान की पुष्टि',
     bn: 'রোগ নির্ণয় যাচাই',
+  },
+  'nav.croprow': { en: 'Crop row scan', mr: 'पीक ओळख स्कॅन', hi: 'फसल पंक्ति स्कैन', bn: 'ফসল সারি স্ক্যান' },
+  'nav.croprow.desc': {
+    en: 'Locate plants in live or uploaded video',
+    mr: 'थेट किंवा अपलोड व्हिडिओत झाडे शोधा',
+    hi: 'लाइव या अपलोड वीडियो में पौधे खोजें',
+    bn: 'লাইভ বা আপলোড ভিডিওতে গাছ খুঁজুন',
   },
 
   'farmer.heading': {
@@ -536,6 +549,81 @@ const STRINGS = {
     bn: 'গ্রহণ করুন না চাপলে কিছুই সংরক্ষিত হয় না.',
   },
 
+  'croprow.badge': { en: 'under development', mr: 'विकासाधीन', hi: 'विकासाधीन', bn: 'উন্নয়নাধীন' },
+  'croprow.tagline': {
+    en: 'Locates crop plants (lettuce) in the field, live or from a video clip, and counts them per frame. Preview only. Nothing is saved.',
+    mr: 'शेतातील पीक झाडे (लेट्यूस) थेट किंवा व्हिडिओतून शोधते आणि प्रत्येक फ्रेममध्ये मोजते. फक्त पूर्वावलोकन. काहीही जतन होत नाही.',
+    hi: 'खेत में फसल के पौधे (लेट्यूस) लाइव या वीडियो से खोजता है और हर फ्रेम में गिनता है. सिर्फ़ प्रीव्यू. कुछ भी सहेजा नहीं जाता.',
+    bn: 'মাঠে ফসলের গাছ (লেটুস) লাইভ বা ভিডিও থেকে খুঁজে প্রতি ফ্রেমে গোনে. শুধু প্রিভিউ. কিছুই সংরক্ষিত হয় না.',
+  },
+  'croprow.mode.live': { en: 'Live camera', mr: 'थेट कॅमेरा', hi: 'लाइव कैमरा', bn: 'লাইভ ক্যামেরা' },
+  'croprow.mode.upload': { en: 'Upload video', mr: 'व्हिडिओ अपलोड करा', hi: 'वीडियो अपलोड करें', bn: 'ভিডিও আপলোড' },
+  'croprow.clear': { en: 'Clear video', mr: 'व्हिडिओ काढा', hi: 'वीडियो हटाएँ', bn: 'ভিডিও সরান' },
+  'croprow.pickPrompt': {
+    en: 'Start the camera or upload a video',
+    mr: 'कॅमेरा सुरू करा किंवा व्हिडिओ अपलोड करा',
+    hi: 'कैमरा शुरू करें या वीडियो अपलोड करें',
+    bn: 'ক্যামেরা চালু করুন বা ভিডিও আপলোড করুন',
+  },
+  'croprow.badFormat': {
+    en: 'This video codec is not supported by browsers (needs H.264). Convert it with croprow/convert_videos.py, then upload the converted file.',
+    mr: 'हा व्हिडिओ कोडेक ब्राउझरमध्ये चालत नाही (H.264 हवा). croprow/convert_videos.py ने रूपांतरित करा, मग तो अपलोड करा.',
+    hi: 'यह वीडियो कोडेक ब्राउज़र में नहीं चलता (H.264 चाहिए). croprow/convert_videos.py से बदलें, फिर अपलोड करें.',
+    bn: 'এই ভিডিও কোডেক ব্রাউজারে চলে না (H.264 দরকার). croprow/convert_videos.py দিয়ে রূপান্তর করে আপলোড করুন.',
+  },
+  'croprow.plants': { en: 'plants', mr: 'झाडे', hi: 'पौधे', bn: 'গাছ' },
+  'croprow.readout': { en: 'Plants counted', mr: 'मोजलेली झाडे', hi: 'गिने गए पौधे', bn: 'গোনা গাছ' },
+  'croprow.total': { en: 'total plants', mr: 'एकूण झाडे', hi: 'कुल पौधे', bn: 'মোট গাছ' },
+  'croprow.inView': { en: 'In view', mr: 'दृश्यात', hi: 'दृश्य में', bn: 'দৃশ্যে' },
+  'croprow.peak': { en: 'Peak', mr: 'सर्वाधिक', hi: 'अधिकतम', bn: 'সর্বোচ্চ' },
+  'croprow.totalHint': {
+    en: 'Each plant is tracked frame to frame and counted once. A plant that leaves and returns is counted again, so treat the total as an estimate.',
+    mr: 'प्रत्येक झाड फ्रेमागणिक ट्रॅक करून एकदाच मोजले जाते. बाहेर जाऊन परत आलेले झाड पुन्हा मोजले जाते, म्हणून एकूण संख्या अंदाजे समजा.',
+    hi: 'हर पौधा फ्रेम-दर-फ्रेम ट्रैक कर एक बार गिना जाता है. बाहर जाकर लौटा पौधा फिर गिना जाता है, इसलिए कुल संख्या अनुमान मानें.',
+    bn: 'প্রতিটি গাছ ফ্রেম ধরে ট্র্যাক করে একবার গোনা হয়. বেরিয়ে ফিরে আসা গাছ আবার গোনা হয়, তাই মোটকে আনুমানিক ধরুন.',
+  },
+  'croprow.idleHelp': {
+    en: 'Boxes and a live plant count appear here as the footage plays.',
+    mr: 'फुटेज चालू असताना चौकटी व थेट झाड-गणना येथे दिसते.',
+    hi: 'फुटेज चलने पर बॉक्स और लाइव पौधा-गिनती यहाँ दिखेगी.',
+    bn: 'ফুটেজ চললে বাক্স ও লাইভ গাছ-গণনা এখানে দেখাবে.',
+  },
+  'croprow.none': {
+    en: 'No crop in this frame yet.',
+    mr: 'या फ्रेममध्ये अद्याप पीक नाही.',
+    hi: 'इस फ्रेम में अभी फसल नहीं.',
+    bn: 'এই ফ্রেমে এখনও ফসল নেই.',
+  },
+  'croprow.noModel': {
+    en: 'CropRow model is not installed, so localization is off.',
+    mr: 'क्रॉपरो मॉडेल स्थापित नाही, त्यामुळे स्थान शोध बंद आहे.',
+    hi: 'क्रॉपरो मॉडल स्थापित नहीं है, इसलिए लोकेशन बंद है.',
+    bn: 'ক্রপরো মডেল ইনস্টল নেই, তাই লোকেশন বন্ধ.',
+  },
+  'croprow.noModelHelp': {
+    en: 'Export it with croprow/export_onnx.py. You can still use Check crop meanwhile.',
+    mr: 'croprow/export_onnx.py ने ते एक्सपोर्ट करा. दरम्यान पीक तपासा वापरता येईल.',
+    hi: 'croprow/export_onnx.py से इसे एक्सपोर्ट करें. इस बीच फसल जाँचें का उपयोग करें.',
+    bn: 'croprow/export_onnx.py দিয়ে এক্সপোর্ট করুন. এর মধ্যে ফসল দেখুন ব্যবহার করুন.',
+  },
+  'croprow.note1': {
+    en: 'Works with any camera on the device, or a saved video file.',
+    mr: 'उपकरणावरील कोणत्याही कॅमेऱ्यासह, किंवा जतन केलेल्या व्हिडिओसह चालते.',
+    hi: 'डिवाइस के किसी भी कैमरे, या सहेजी वीडियो फ़ाइल के साथ चलता है.',
+    bn: 'ডিভাইসের যেকোনো ক্যামেরা, বা সংরক্ষিত ভিডিও ফাইলে কাজ করে.',
+  },
+  'croprow.note2': {
+    en: 'Uses the croprow model, on-device when exported to ONNX, else on the server.',
+    mr: 'क्रॉपरो मॉडेल वापरते; ONNX एक्सपोर्ट असल्यास उपकरणावर, अन्यथा सर्व्हरवर.',
+    hi: 'क्रॉपरो मॉडल का उपयोग; ONNX एक्सपोर्ट होने पर डिवाइस पर, वरना सर्वर पर.',
+    bn: 'ক্রপরো মডেল ব্যবহার করে; ONNX এক্সপোর্ট থাকলে ডিভাইসে, নয়তো সার্ভারে.',
+  },
+  'croprow.note3': {
+    en: 'Separate from potato disease detection. It only localizes crop, saves no case.',
+    mr: 'बटाटा रोग शोधापासून वेगळे. ते फक्त पीक स्थान शोधते, प्रकरण जतन करत नाही.',
+    hi: 'आलू रोग पहचान से अलग. यह सिर्फ़ फसल की जगह बताता है, कोई केस नहीं सहेजता.',
+    bn: 'আলুর রোগ শনাক্তকরণ থেকে আলাদা. এটি শুধু ফসলের অবস্থান বলে, কেস সংরক্ষণ করে না.',
+  },
   'chat.open': { en: 'Ask CropGuard', mr: 'क्रॉपगार्डला विचारा', hi: 'क्रॉपगार्ड से पूछें', bn: 'ক্রপগার্ডকে জিজ্ঞাসা করুন' },
   'chat.title': { en: 'CropGuard Assistant', mr: 'क्रॉपगार्ड सहायक', hi: 'क्रॉपगार्ड सहायक', bn: 'ক্রপগার্ড সহায়ক' },
   'chat.subtitle': {

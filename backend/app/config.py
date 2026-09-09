@@ -28,6 +28,15 @@ class Settings(BaseSettings):
     detection_iou_threshold: float = 0.45
     low_confidence_threshold: float = 0.55
 
+    # CropRow (separate single-class "lettuce" localizer, see ../croprow/). Kept
+    # apart from the potato detector above: its own weights, its own class list.
+    # Prefer an ONNX export so serving stays torch-free and the browser can run
+    # it on-device; a raw best.pt via ultralytics is the training-time fallback.
+    croprow_onnx_path: Path = REPO_ROOT / "croprow" / "models" / "best.onnx"
+    croprow_pt_path: Path = REPO_ROOT / "croprow" / "models" / "best.pt"
+    croprow_conf_threshold: float = 0.25
+    croprow_iou_threshold: float = 0.45
+
     # Weather
     openweather_api_key: str = ""
     weather_provider: str = "openweathermap"

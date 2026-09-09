@@ -22,6 +22,12 @@ export const MENU_GROUPS = [
       { to: '/review', key: 'nav.review' },
     ],
   },
+  // Work-in-progress features live in their own group so they read as a preview,
+  // not a shipped tool, and stay walled off from the farmer/officer workflows.
+  {
+    labelKey: 'menu.lab',
+    items: [{ to: '/croprow', key: 'nav.croprow' }],
+  },
 ]
 
 export default function MenuDrawer({ open, onClose }) {
