@@ -381,8 +381,12 @@ button.ghost.small { min-height: 40px; padding: 6px 12px; font-size: 14px; }
 .headline { font-size: 24px; font-weight: 650; line-height: 1.2; }
 
 /* ---------- detection preview ---------- */
-.preview { position: relative; display: block; max-width: 100%; }
-.preview img { max-width: 100%; border-radius: var(--radius-sm); display: block; }
+/* inline-block so the frame shrink-wraps the image: the bbox overlay is
+ * positioned in percentages of this box, so it must be exactly the image's
+ * rendered size -- a full-width block frame would offset the boxes whenever
+ * the photo is narrower than the card (e.g. a portrait shot). */
+.preview { position: relative; display: inline-block; max-width: 100%; }
+.preview img { max-width: 100%; height: auto; border-radius: var(--radius-sm); display: block; }
 .bbox {
   position: absolute;
   border: 2.5px solid #ffd84d;
