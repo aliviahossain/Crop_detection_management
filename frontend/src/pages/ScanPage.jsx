@@ -44,6 +44,10 @@ export default function ScanPage() {
   const [stats, setStats] = useState({ fps: 0, inferenceMs: 0 })
   // Experimental canopy-airflow readout, derived passively from the same frames.
   const [airflow, setAirflow] = useState({ ready: false, level: null })
+  // The airflow level captured at the moment a scan is accepted. The live
+  // reading is reset when the camera stops, so it is snapshotted here to stay
+  // visible next to the result.
+  const [resultAirflow, setResultAirflow] = useState(null)
   const [accepted, setAccepted] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
@@ -210,6 +214,9 @@ export default function ScanPage() {
     if (!video) return
     setSubmitting(true)
     setError(null)
+    // Snapshot the live airflow reading now, before stopCamera() clears it,
+    // so it can be reported alongside the result.
+    setResultAirflow(airflow.ready && airflow.level ? airflow.level : null)
     try {
       // Freeze the exact frame the verdict was formed on and send it through
       // the full /detect pipeline -- so an accepted scan becomes a real case
@@ -291,11 +298,25 @@ export default function ScanPage() {
                 {t('result.confidence')}: {Math.round(accepted.confidence * 100)}%
               </div>
             )}
+            <div className="airflow-result">
+              <div className="spread">
+                <span className="muted small">💨 {t('scan.airflow.detected')}</span>
+                <span className={`badge ${resultAirflow === 'still' ? 'medium' : 'neutral'}`}>
+                  {resultAirflow ? t(`scan.airflow.${resultAirflow}`) : t('scan.airflow.unknown')}
+                </span>
+              </div>
+              {resultAirflow && (
+                <p className="muted small" style={{ margin: '6px 0 0' }}>
+                  {t(`scan.airflow.${resultAirflow}.note`)}
+                </p>
+              )}
+            </div>
             <div className="inline">
               <button
                 className="primary auto"
                 onClick={() => {
                   setAccepted(null)
+                  setResultAirflow(null)
                   startCamera()
                 }}
               >

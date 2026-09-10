@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { LANGUAGES, LangContext, useLang, useT } from './lib/i18n.js'
 import { api } from './lib/api.js'
 import MenuDrawer from './components/MenuDrawer.jsx'
+import FaqDialog from './components/FaqDialog.jsx'
 import ChatBot from './components/ChatBot.jsx'
 import HomePage from './pages/HomePage.jsx'
 import FarmerPage from './pages/FarmerPage.jsx'
@@ -13,10 +14,29 @@ import DashboardPage from './pages/DashboardPage.jsx'
 import ReviewPage from './pages/ReviewPage.jsx'
 import CropRowPage from './pages/CropRowPage.jsx'
 
-function TopBar({ onMenu }) {
+function TopBar({ onMenu, onHelp }) {
   const t = useT()
-  const { lang } = useLang()
+  const { lang, setLang } = useLang()
   const current = LANGUAGES.find((l) => l.code === lang)
+  const [langOpen, setLangOpen] = useState(false)
+  const langWrapRef = useRef(null)
+
+  // A click anywhere outside the language menu, or Escape, closes it -- so the
+  // dropdown behaves like a native menu rather than lingering on the screen.
+  useEffect(() => {
+    if (!langOpen) return undefined
+    const onDown = (e) => {
+      if (langWrapRef.current && !langWrapRef.current.contains(e.target)) setLangOpen(false)
+    }
+    const onKey = (e) => e.key === 'Escape' && setLangOpen(false)
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [langOpen])
+
   return (
     <header className="topbar">
       <button className="menu-btn" onClick={onMenu} aria-label={t('menu.open')}>
@@ -31,9 +51,45 @@ function TopBar({ onMenu }) {
         <strong>{t('app.title')}</strong>
         <span>{t('app.subtitle')}</span>
       </div>
-      <button className="lang-pill" onClick={onMenu} aria-label={t('menu.language')}>
-        {current?.label || lang}
+      <button
+        className="help-btn"
+        onClick={onHelp}
+        aria-label={t('faq.open')}
+        title={t('faq.open')}
+      >
+        ?
       </button>
+      <div className="lang-wrap" ref={langWrapRef}>
+        <button
+          className="lang-pill"
+          onClick={() => setLangOpen((v) => !v)}
+          aria-label={t('menu.language')}
+          aria-haspopup="menu"
+          aria-expanded={langOpen}
+        >
+          {current?.label || lang}
+          <span className="caret" aria-hidden="true">▾</span>
+        </button>
+        {langOpen && (
+          <div className="lang-menu" role="menu">
+            {LANGUAGES.map((l) => (
+              <button
+                key={l.code}
+                role="menuitemradio"
+                aria-checked={lang === l.code}
+                className={lang === l.code ? 'active' : ''}
+                onClick={() => {
+                  setLang(l.code)
+                  setLangOpen(false)
+                }}
+              >
+                <b>{l.label}</b>
+                <small>{l.sub}</small>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </header>
   )
 }
@@ -96,17 +152,20 @@ function HealthBanner() {
 export default function App() {
   const [lang, setLang] = useState(() => localStorage.getItem('cropguard.lang') || 'mr')
   const [menuOpen, setMenuOpen] = useState(false)
+  const [faqOpen, setFaqOpen] = useState(false)
   useEffect(() => {
     localStorage.setItem('cropguard.lang', lang)
   }, [lang])
   const value = useMemo(() => ({ lang, setLang }), [lang])
   const closeMenu = useCallback(() => setMenuOpen(false), [])
+  const closeFaq = useCallback(() => setFaqOpen(false), [])
 
   return (
     <LangContext.Provider value={value}>
       <div className="app">
-        <TopBar onMenu={() => setMenuOpen(true)} />
+        <TopBar onMenu={() => setMenuOpen(true)} onHelp={() => setFaqOpen(true)} />
         <MenuDrawer open={menuOpen} onClose={closeMenu} />
+        <FaqDialog open={faqOpen} onClose={closeFaq} />
         <HealthBanner />
         <Routes>
           <Route path="/" element={<HomePage />} />
