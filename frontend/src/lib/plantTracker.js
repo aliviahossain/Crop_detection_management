@@ -38,15 +38,52 @@ export class PlantTracker {
     this.tracks = [] // { id, bbox:[x1,y1,x2,y2], missed }
     this.nextId = 1
     this.total = 0
+    // id -> { classKey: timesSeen }, kept for every plant ever tracked including
+    // pruned ones, so a running per-class total survives a plant leaving view.
+    this.votes = new Map()
+  }
+
+  /**
+   * Record one frame's opinion of what class a track is.
+   *
+   * A per-frame label flickers: the same plant reads healthy on a sharp frame
+   * and unhealthy on a motion-blurred one. Counting the latest label would make
+   * the totals jitter, so each track keeps a tally and is reported as whatever
+   * it has been called most often. Detections with no class (the single-class
+   * croprow model) record nothing and leave `byClass` empty.
+   */
+  _vote(id, classKey) {
+    if (!classKey) return
+    const tally = this.votes.get(id) || {}
+    tally[classKey] = (tally[classKey] || 0) + 1
+    this.votes.set(id, tally)
+  }
+
+  /** Unique plants per class, each track counted once under its majority label. */
+  byClass() {
+    const counts = {}
+    for (const tally of this.votes.values()) {
+      let best = null
+      let bestN = -1
+      for (const [key, n] of Object.entries(tally)) {
+        if (n > bestN) {
+          bestN = n
+          best = key
+        }
+      }
+      if (best) counts[best] = (counts[best] || 0) + 1
+    }
+    return counts
   }
 
   /**
    * Advance one frame.
-   * @param {Array<{bboxNorm:number[]}>} detections  normalised [x1,y1,x2,y2]
-   * @returns {{ total:number, active:number }}
+   * @param {Array<{bboxNorm:number[], classKey?:string}>} detections  normalised [x1,y1,x2,y2]
+   * @returns {{ total:number, active:number, byClass:Object<string,number> }}
    */
   update(detections) {
-    const boxes = (detections || []).map((d) => d.bboxNorm).filter(Boolean)
+    const dets = (detections || []).filter((d) => d.bboxNorm)
+    const boxes = dets.map((d) => d.bboxNorm)
     const usedTracks = new Set()
     const usedDets = new Set()
 
@@ -66,6 +103,7 @@ export class PlantTracker {
       usedDets.add(di)
       this.tracks[ti].bbox = boxes[di]
       this.tracks[ti].missed = 0
+      this._vote(this.tracks[ti].id, dets[di].classKey)
     }
 
     // Age and prune existing tracks that went unmatched this frame.
@@ -78,10 +116,16 @@ export class PlantTracker {
     // A detection matching no track is a plant we have not seen -> count it once.
     boxes.forEach((b, di) => {
       if (usedDets.has(di)) return
-      this.tracks.push({ id: this.nextId++, bbox: b, missed: 0 })
+      const id = this.nextId++
+      this.tracks.push({ id, bbox: b, missed: 0 })
+      this._vote(id, dets[di].classKey)
       this.total += 1
     })
 
-    return { total: this.total, active: this.tracks.filter((t) => t.missed === 0).length }
+    return {
+      total: this.total,
+      active: this.tracks.filter((t) => t.missed === 0).length,
+      byClass: this.byClass(),
+    }
   }
 }

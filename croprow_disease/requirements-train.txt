@@ -1,0 +1,40 @@
+# croprow_disease training / inference stack (notebooks 03-08).
+#
+# This module SHARES the croprow environment -- it needs no venv of its own.
+# If croprow/.venv already exists you are done; nothing here conflicts with it.
+# Do NOT install into the potato backend's .venv (Python 3.13 + the serving
+# stack). See croprow_disease/README.md.
+#
+#   py -3.11 -m venv croprow/.venv
+#   croprow/.venv/Scripts/activate         # Windows
+#   pip install -r croprow_disease/requirements-train.txt
+#   python -m ipykernel install --user --name croprow --display-name "Python 3 (croprow)"
+
+numpy
+opencv-python          # the colour rule (health.py) is entirely cv2 + numpy
+matplotlib
+pyyaml
+pandas                 # 07 comparison table
+
+ultralytics>=8.3.0     # provides YOLO11n + ByteTrack
+onnx                   # 07 ONNX export
+onnxruntime            # 07 ONNX benchmark (use onnxruntime-gpu on CUDA)
+
+# PyTorch: install the build that matches your machine from pytorch.org.
+#   CPU only : pip install torch torchvision
+#   CUDA 12.1: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+torch
+torchvision
+
+# TensorRT FP16 export (07) needs an NVIDIA GPU. `yolo export format=engine`
+# pulls the right tensorrt wheel; it is skipped cleanly on CPU-only machines.
+
+imageio-ffmpeg         # H.264 encoding for 06 / generate_video.py / convert_videos.py
+
+# For running the notebooks:
+jupyter
+ipykernel
+
+# NOTE: notebooks 01, 01b and 02 need only numpy / opencv / matplotlib / pyyaml
+# / jupyter -- torch and ultralytics are NOT required for dataset prep, label
+# validation, or the colour-rule diagnostics.

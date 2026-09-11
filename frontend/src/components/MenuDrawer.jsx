@@ -26,7 +26,10 @@ export const MENU_GROUPS = [
   // not a shipped tool, and stay walled off from the farmer/officer workflows.
   {
     labelKey: 'menu.lab',
-    items: [{ to: '/croprow', key: 'nav.croprow' }],
+    items: [
+      { to: '/croprow', key: 'nav.croprow' },
+      { to: '/crophealth', key: 'nav.crophealth' },
+    ],
   },
 ]
 

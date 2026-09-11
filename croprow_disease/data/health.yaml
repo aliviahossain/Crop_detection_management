@@ -1,0 +1,6 @@
+train: D:\sih26software\Crop_detection_management\croprow_disease\data\train.txt
+val: D:\sih26software\Crop_detection_management\croprow_disease\data\val.txt
+nc: 2
+names:
+- healthy
+- unhealthy

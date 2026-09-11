@@ -41,6 +41,13 @@ export const api = {
   croprowThresholds: () => request('/croprow/thresholds'),
   croprowModelUrl: () => `${BASE}/croprow/model`,
 
+  // CropHealth lab: two-class healthy/unhealthy plant detection, the
+  // croprow_disease weights. Same four-endpoint contract, also no case/DB.
+  crophealthStatus: () => request('/crophealth/status'),
+  crophealthFrame: (formData) => request('/crophealth/frame', { method: 'POST', body: formData }),
+  crophealthThresholds: () => request('/crophealth/thresholds'),
+  crophealthModelUrl: () => `${BASE}/crophealth/model`,
+
   // Proactive farmer home alert: weather scouting + nearby-outbreak pressure.
   homeOverview: (params) => request(`/home/overview?${new URLSearchParams(params)}`),
 
