@@ -19,6 +19,7 @@ from app.database import init_db
 from app.routers import (
     advisory,
     chat,
+    crophealth,
     croprow,
     dashboard,
     detect,
@@ -80,7 +81,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for r in (detect, risk, advisory, home, hotspots, sensors, review, followup, dashboard, meta, chat, croprow):
+for r in (detect, risk, advisory, home, hotspots, sensors, review, followup, dashboard,
+          meta, chat, croprow, crophealth):
     app.include_router(r.router)
 
 # Uploaded field photos, so the review queue can display them.

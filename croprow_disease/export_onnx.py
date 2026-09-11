@@ -43,8 +43,12 @@ def main() -> int:
 
     # Guard the class contract: exporting a single-class checkpoint under this
     # name would produce an ONNX that silently disagrees with every consumer.
+    # Capitalisation is not part of that contract -- a checkpoint trained from a
+    # yaml that spells them "Healthy"/"Unhealthy" is the same two classes in the
+    # same order, and the serving layer lower-cases them on load. Order and
+    # spelling are what must match.
     names = list(getattr(model, "names", {}).values()) or []
-    if names and [str(n) for n in names] != CLASS_NAMES:
+    if names and [str(n).strip().lower() for n in names] != CLASS_NAMES:
         print(f"Refusing to export: checkpoint classes are {names}, expected "
               f"{CLASS_NAMES}. Wrong weights, or a dataset yaml with the classes "
               "in the wrong order.")

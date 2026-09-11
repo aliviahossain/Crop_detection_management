@@ -37,6 +37,16 @@ class Settings(BaseSettings):
     croprow_conf_threshold: float = 0.25
     croprow_iou_threshold: float = 0.45
 
+    # CropHealth (two-class healthy/unhealthy plant detector, see
+    # ../croprow_disease/). Same shape as the croprow block above and equally
+    # separate from it: different weights, two classes instead of one. A consumer
+    # decoding this model's raw output reads 4 box + 2 class scores per
+    # prediction and takes the argmax of the two class columns.
+    crophealth_onnx_path: Path = REPO_ROOT / "croprow_disease" / "models" / "best.onnx"
+    crophealth_pt_path: Path = REPO_ROOT / "croprow_disease" / "models" / "best.pt"
+    crophealth_conf_threshold: float = 0.25
+    crophealth_iou_threshold: float = 0.45
+
     # Weather
     openweather_api_key: str = ""
     weather_provider: str = "openweathermap"

@@ -28,12 +28,15 @@ That is a deliberate choice, not a shortcut:
 Adding a crop is a dataset-and-retrain task: extend `ml/data.yaml`,
 `backend/app/services/taxonomy.py`, and the knowledge base. No architectural change.
 
-A **second, separate detector** lives under the menu's *In the lab · beta* group:
-**Crop row scan** ([`croprow/`](croprow/)), a single-class crop (lettuce) *localizer*
-for a cultivator-mounted camera. It is deliberately walled off from the potato
-disease stack - its own weights, its own `/croprow` endpoints, its own class list -
-and is an in-development preview, not a shipped tool. See
-[The CropRow lab](#8-the-croprow-lab-a-separate-in-development-detector) below.
+Two **further, separate detectors** live under the menu's *In the lab · beta* group.
+**Crop row scan** ([`croprow/`](croprow/)) is a single-class crop (lettuce)
+*localizer* for a cultivator-mounted camera. **Crop health scan**
+([`croprow_disease/`](croprow_disease/)) goes one step further on the same
+footage and marks each plant **healthy or unhealthy**. Both are deliberately
+walled off from the potato disease stack - their own weights, their own
+`/croprow` and `/crophealth` endpoints, their own class lists - and both are
+in-development previews, not shipped tools. See
+[The lab detectors](#8-the-lab-a-separate-in-development-detector-pair) below.
 
 ## Honesty about what is real
 
@@ -137,6 +140,7 @@ synthetic backfill that the response reports explicitly.
 │ POST /detect/frame │ Stateless per-frame inference for the live scanner
 │ GET  /detect/model │ Serves the ONNX so the browser can infer on-device
 │ /croprow/*       │ CropRow lab (beta): separate single-class crop localizer for video
+│ /crophealth/*    │ CropHealth lab (beta): two-class healthy/unhealthy plant detector
 │ POST /risk       │ Smith / Beaumont / TOMCAST / degree-days + OpenWeatherMap
 │ POST /advisory   │ LangGraph pipeline over a human-reviewed IPDM knowledge base
 │ GET  /hotspots   │ Geo-grid aggregation, confirmed cases weighted above unverified
@@ -283,7 +287,7 @@ the triage layer, which withholds the dose table below the low-confidence thresh
 disease classes are tuned for recall and `healthy` for precision, per class - see
 `ml/tune_thresholds.py`.
 
-### 8. The CropRow lab: a separate, in-development detector
+### 8. The lab: a separate, in-development detector pair
 
 Under the menu's *In the lab · beta* group, **Crop row scan** answers a different
 question from the rest of the app - *where are the crop plants* for a
@@ -308,9 +312,38 @@ list, no case, no advisory, no database write.
   MPEG-4 Part 2 codec, so `croprow/convert_videos.py` transcodes them to H.264
   and `croprow/generate_video.py` now writes H.264 directly.
 
-This is an **in-development** module by design: the croprow training notebooks
-(03-07) ship unrun, and the feature is grouped under "In the lab · beta" so it
-reads as a preview.
+Alongside it, **Crop health scan** answers the follow-up question on the same
+footage: *is this plant healthy*. It is a two-class (`healthy` / `unhealthy`)
+detector trained in [`croprow_disease/`](croprow_disease/), served on its own
+`/crophealth` endpoints, and it reuses the croprow lab's shape exactly - live
+camera or uploaded clip, boxes drawn per frame, no case, no advisory, no
+database write.
+
+- **Two classes, so the decode contract differs.** This model emits 4 box + **2**
+  class scores per prediction where croprow emits 4 + 1, and a box is classified
+  by the argmax of the two class columns. A serving path written against the
+  single-class model does not error on these outputs, it just mislabels them,
+  so `backend/app/services/crophealth_detector.py` is a separate decoder and
+  `backend/tests/test_crophealth.py` pins which class each box comes back as.
+- **Suppression runs per class.** A healthy and an unhealthy plant that overlap
+  are two findings. Pooling them would silently delete the lower-scoring one,
+  which is exactly the case where the two labels disagree and it matters most.
+  The server and `frontend/src/lib/yoloDecode.js` agree on this.
+- **The count is per class, and it is voted.** The same tracker counts each
+  plant once, and each track keeps a tally of the labels it has been given so a
+  plant that flickers on one blurred frame is reported as whatever it has been
+  called most often, not as whatever the last frame said.
+- **It is vigour triage, not a diagnosis, and the UI says so.** The training
+  labels came from a leaf-colour rule over real annotation polygons
+  (`croprow_disease/health.py`), not from an agronomist. An "unhealthy" mark
+  means the canopy reads as off, not that a disease is confirmed. The class
+  names are read from the weights themselves and a model that does not expose
+  this class pair is served with its boxes but flagged as untrustworthy for
+  labels rather than quietly relabelled.
+
+Both are **in-development** modules by design: the training notebooks ship
+unrun, and the features are grouped under "In the lab · beta" so they read as
+previews.
 
 ---
 
@@ -385,13 +418,16 @@ ml/              dataset prep · training · evaluation · threshold tuning · b
 ml/DATASETS.md   dataset comparison, imbalance analysis, provenance
 ml/notebooks/    Kaggle training notebook (potato, 3 classes, 100 epochs)
 frontend/src/    React app - live scanner, farmer flow, risk page, Leaflet map,
-                 dashboard, review queue, CropRow lab (beta)
+                 dashboard, review queue, CropRow + CropHealth labs (beta)
 frontend/src/lib/ yoloDecode (browser mirror of the server decoder) · liveDetector
                  (onnxruntime-web, parameterised per model) · plantTracker (unique
                  plant counting) · frameQuality · stabilizer · i18n
 croprow/         CropRow lab (in development): a single-class crop (lettuce) localizer,
                  separate from ml/ - training notebooks, best.pt, export_onnx.py,
                  convert_videos.py + generate_video.py (H.264) video helpers
+croprow_disease/ CropHealth lab (in development): a two-class healthy/unhealthy plant
+                 detector over the same footage - health.py (the colour rule that
+                 derives the labels), dataset.py, training notebooks, export_onnx.py
 scripts/         demo data seeding · risk-dataset export for the XGBoost layer
 docs/            architecture notes and PS traceability matrix
 ```

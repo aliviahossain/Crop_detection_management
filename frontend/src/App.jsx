@@ -13,6 +13,7 @@ import MapPage from './pages/MapPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import ReviewPage from './pages/ReviewPage.jsx'
 import CropRowPage from './pages/CropRowPage.jsx'
+import CropHealthPage from './pages/CropHealthPage.jsx'
 
 function TopBar({ onMenu, onHelp }) {
   const t = useT()
@@ -176,6 +177,7 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/review" element={<ReviewPage />} />
           <Route path="/croprow" element={<CropRowPage />} />
+          <Route path="/crophealth" element={<CropHealthPage />} />
           <Route path="*" element={<Navigate to="/check" replace />} />
         </Routes>
         <ChatBot />

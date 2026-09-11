@@ -191,10 +191,40 @@ precision, recall, **per-class mAP50**, epochs, imgsz, which dataset, and where
 the labels came from. Read the `mAP50 unhealthy` column first — with imbalanced
 classes a strong mean can hide a class the model never predicts.
 
-## Serving note
+## Serving
 
 `export_onnx.py` writes `models/best.onnx`. This model has **two** classes, so a
 consumer decoding the raw ONNX output reads 6 values per prediction (4 box + 2
 class scores) and takes the argmax of the two class scores — not the 5-value,
 single-objectness layout of the `croprow/` model. A serving path written against
 that one will not error here; it will just be wrong.
+
+The app serves these weights as **Crop health scan**, in the menu's *In the lab
+· beta* group:
+
+| Piece | Where |
+| --- | --- |
+| Decoder | `backend/app/services/crophealth_detector.py` |
+| Endpoints | `backend/app/routers/crophealth.py` (`/crophealth/status`, `/thresholds`, `/model`, `/frame`) |
+| Page | `frontend/src/pages/CropHealthPage.jsx` at `/crophealth` |
+| Tests | `backend/tests/test_crophealth.py` |
+
+**Installing weights.** Drop the trained files in as `models/best.onnx` and
+`models/best.pt` — those exact names are what `app.config` reads
+(`CROPHEALTH_ONNX_PATH` / `CROPHEALTH_PT_PATH` override them). ONNX is preferred
+and is loaded first: serving stays torch-free, and the browser fetches the very
+same file from `GET /crophealth/model` to run on-device. `best.pt` is the
+training-time fallback and needs ultralytics installed. With neither present the
+lab reports itself unavailable rather than inventing boxes.
+
+**Class names.** The checkpoint spells its classes `Healthy` / `Unhealthy`; the
+serving layer reads the names out of the model itself and lower-cases them, so
+`health.py`'s `healthy` / `unhealthy` remain the keys everything downstream uses.
+Order, not capitalisation, is the contract — weights whose classes are not this
+pair are still served, with their boxes, but flagged as untrustworthy for labels.
+
+**Decode differences to expect.** The backend letterboxes to a square 640 (the
+`_letterbox` shared with the potato and croprow detectors), while
+`ultralytics.predict` defaults to a rectangular letterbox. The same frame can
+therefore score somewhat differently through `YOLO(...).predict(...)` than
+through `/crophealth/frame`; pass `rect=False` when comparing the two.
