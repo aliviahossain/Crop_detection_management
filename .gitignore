@@ -60,3 +60,15 @@ frames/
 # croprow/.venv/ and any exported croprow weights). Allow tracked weights
 # that are deliberately dropped into croprow/models/:
 croprow/models/*.pt
+
+# --- croprow_disease feature (croprow-disease branch): 2-class plant health ---
+# Datasets live OUTSIDE the repo (LETTUCE_ROOT / HEALTH_DATASET). Never commit
+# frames, videos, run outputs, or weights. Small tracked artifacts are the
+# notebooks, health.py / utils.py / dataset.py, the data yaml, the train/val
+# split lists, and RESULTS.md.
+# runs/, *.pt, *.onnx, *.mp4 and .venv/ are already ignored above. Allow tracked
+# weights deliberately dropped into croprow_disease/models/:
+croprow_disease/models/*.pt
+croprow_disease/demo_clips/
+# Scratch summary written by the conversion step; regenerated, not a source file.
+croprow_disease/data/_conversion_summary.json
