@@ -44,7 +44,6 @@ fails loudly on that rather than letting it through.
 from __future__ import annotations
 
 import random
-import shutil
 from collections import Counter
 from pathlib import Path
 from typing import Iterable, Sequence
