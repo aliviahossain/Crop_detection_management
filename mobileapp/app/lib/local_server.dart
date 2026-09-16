@@ -302,21 +302,36 @@ class LocalServer {
     final aphid = degreeDays(days, kPestModels['aphid_vector']!);
 
     final lateScore = [smith.score, beaumont.score].reduce((a, b) => a > b ? a : b);
-    final threats = [
+
+    // Disease and pest scores are NOT comparable, and treating them as one
+    // ranked list is a trap. Smith/Beaumont/TOMCAST answer "are infection
+    // conditions present right now"; degree-days answer "how far through its
+    // life cycle is this insect" - a phenology timer that saturates at 1.0
+    // after any normal warm spell. Ranking them together let the aphid timer
+    // own the traffic light permanently, so the farmer was told to go
+    // photograph plants for aphids every single day.
+    //
+    // So: diseases drive the "walk your field today" decision; pest models are
+    // reported alongside as emergence timing, which is what they actually are.
+    final diseases = [
       _threat('potato_late_blight', lateScore, [smith, beaumont]),
       _threat('potato_early_blight', tomcast.score, [tomcast]),
+    ]..sort((a, b) => (b['score'] as double).compareTo(a['score'] as double));
+
+    final pests = [
       _threat('potato_tuber_moth', moth.score, [moth]),
       _threat('aphid_vector', aphid.score, [aphid]),
-    ]..sort((a, b) =>
-        (b['score'] as double).compareTo(a['score'] as double));
+    ]..sort((a, b) => (b['score'] as double).compareTo(a['score'] as double));
 
-    final top = threats.first;
+    final top = diseases.first;
     return {
       'overall_level': top['level'],
       'overall_score': top['score'],
       'top_threat': top['key'],
       'top_threat_display': top['display'],
-      'threats': threats,
+      'threats': [...diseases, ...pests],
+      'disease_threats': diseases,
+      'pest_threats': pests,
       'location': {
         'latitude': lat,
         'longitude': lon,
@@ -357,8 +372,10 @@ class LocalServer {
     final status = level == 'high' ? 'act' : (level == 'medium' ? 'watch' : 'calm');
     final display = risk['top_threat_display'];
 
+    // Only disease models justify "go and look at your plants today"; a pest
+    // degree-day total is emergence timing, not a scouting trigger.
     final fired = <String>[];
-    for (final t in risk['threats'] as List) {
+    for (final t in risk['disease_threats'] as List) {
       fired.addAll(((t as Map)['fired'] as List).cast<String>());
     }
 

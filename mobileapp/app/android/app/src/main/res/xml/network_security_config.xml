@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android blocks cleartext HTTP by default from API 28 onward, and the WebView
+  enforces it: loading http://127.0.0.1:<port> fails with
+  ERR_CLEARTEXT_NOT_PERMITTED and no useful message.
+
+  This app's entire backend runs on loopback inside its own process, so it has
+  to be allowed - but ONLY loopback. A blanket android:usesCleartextTraffic
+  ="true" would also permit unencrypted traffic to any server on the internet,
+  which is a real downgrade for an app that will later sync farmer names,
+  phone numbers and plot coordinates.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

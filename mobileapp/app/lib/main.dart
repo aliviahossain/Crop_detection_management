@@ -66,12 +66,16 @@ class _WebShellState extends State<WebShell> {
   Future<void> _boot() async {
     try {
       final origin = await LocalServer.instance.start();
+      debugPrint('[cropguard] on-device server listening at $origin');
       if (!mounted) return;
       setState(() {
         _origin = origin;
         _controller = _buildController(origin);
       });
-    } catch (e) {
+    } catch (e, st) {
+      // Without this the only symptom is a generic error pane, which tells
+      // nobody anything. adb logcat is the one place this can surface.
+      debugPrint('[cropguard] server failed to start: $e\n$st');
       if (mounted) {
         setState(() {
           _loading = false;
@@ -114,9 +118,12 @@ class _WebShellState extends State<WebShell> {
             if (mounted) setState(() => _loading = false);
           },
           onWebResourceError: (err) {
+            debugPrint('[cropguard] webview error: ${err.errorCode} '
+                '${err.errorType} mainFrame=${err.isForMainFrame} '
+                'url=${err.url} :: ${err.description}');
             // Subframe and asset errors are noisy and mostly harmless; only a
             // failure of the main document is worth showing the user.
-            if (!err.isForMainFrame!) return;
+            if (err.isForMainFrame != true) return;
             if (mounted) {
               setState(() {
                 _loading = false;
