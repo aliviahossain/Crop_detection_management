@@ -46,3 +46,6 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Generated from frontend/dist by tools/stage_web.ps1 - build output, not source.
+/assets/web/
