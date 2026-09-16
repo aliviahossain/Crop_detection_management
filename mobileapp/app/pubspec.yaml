@@ -41,6 +41,7 @@ dependencies:
   shelf_router: ^1.1.4
   sqflite: ^2.4.4
   path: ^1.9.1
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:
@@ -64,10 +65,18 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  # The CropGuard web UI, bundled into the APK and served by LocalServer on
+  # 127.0.0.1. This is what makes the app work with no network.
+  #
+  # Generated from frontend/dist by tools/stage_web.ps1 and gitignored - it is
+  # build output, not source. Regenerate after any frontend change, or the APK
+  # ships a stale UI.
+  #
+  # Flutter does not recurse into subdirectories, so each one is listed.
+  assets:
+    - assets/web/
+    - assets/web/assets/
+    - assets/web/ort/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -3,6 +3,8 @@
 /// languages, one definition of correct.
 ///
 /// Regenerate with:  python mobileapp/tools/export_fixtures.py --write
+library;
+
 import 'dart:convert';
 import 'dart:io';
 
