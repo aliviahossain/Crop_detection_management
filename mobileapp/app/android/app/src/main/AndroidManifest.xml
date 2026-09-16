@@ -1,6 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required in the MAIN manifest, not just debug/: Flutter only declares
+         INTERNET for debug and profile builds, so a release build without this
+         line loads nothing and fails silently. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- The live scanner uses getUserMedia inside the WebView. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+
     <application
-        android:label="cropguard"
+        android:label="CropGuard"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

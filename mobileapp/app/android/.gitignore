@@ -12,3 +12,7 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Gradle writes reports here even though the build dir is relocated
+# in android/build.gradle.kts. Not covered by the Flutter template.
+build/
