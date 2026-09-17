@@ -28,11 +28,13 @@ sys.path.insert(0, str(HERE))
 
 from fixture_lib import compare, write_suite  # noqa: E402
 import suite_geo  # noqa: E402
+import suite_kb  # noqa: E402
 import suite_risk_models  # noqa: E402
 import suite_triage  # noqa: E402
 
 SUITES = {
     "geo": suite_geo,
+    "kb": suite_kb,
     "risk_models": suite_risk_models,
     "triage": suite_triage,
 }

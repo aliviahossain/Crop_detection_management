@@ -42,6 +42,18 @@ dependencies:
   sqflite: ^2.4.4
   path: ^1.9.1
   crypto: ^3.0.7
+  path_provider: ^2.1.5
+  http: ^1.2.2
+  file_picker: ^8.1.7
+
+# file_picker pulls in flutter_plugin_android_lifecycle, and 2.0.35 demands its
+# consumers compile against API 36 while file_picker itself still compiles
+# against 34 - a version skew inside the plugin's own dependency tree that no
+# setting on this app can reconcile. Pinning the older lifecycle plugin is the
+# smaller lever than forcing every plugin module's compileSdk from the root
+# Gradle script, which has to fight evaluation order to work at all.
+dependency_overrides:
+  flutter_plugin_android_lifecycle: 2.0.24
 
 dev_dependencies:
   flutter_test:
@@ -77,6 +89,7 @@ flutter:
     - assets/web/
     - assets/web/assets/
     - assets/web/ort/
+    - assets/demo/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

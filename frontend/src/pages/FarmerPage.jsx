@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api.js'
+import { detectPhoto } from '../lib/detectPhoto.js'
 import { useLang, useT } from '../lib/i18n.js'
 import { useVideoDevices } from '../lib/useVideoDevices.js'
 import AdvisoryCard from '../components/AdvisoryCard.jsx'
@@ -138,7 +139,7 @@ export default function FarmerPage() {
           form.append(key, value)
         }
       })
-      setResult(await api.detect(form))
+      setResult(await detectPhoto(form))
     } catch (err) {
       setError(err.message)
     } finally {

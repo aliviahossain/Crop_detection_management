@@ -22,6 +22,13 @@ const describeIfFixture = existsSync(FIXTURE) ? describe : describe.skip
 
 describeIfFixture('onnxruntime-web end to end', () => {
   it('loads the model, runs it, and decodes the same box as the server', async () => {
+    // Note the entry: the app imports 'onnxruntime-web/wasm', this imports the
+    // default, and under Node that resolves to the native binding. So this
+    // covers the model and the decoder, NOT the wasm runtime or its module
+    // loading - the wasm build cannot fetch its own binary in Node. That gap
+    // is covered instead by the staged-asset and bundle-content assertions in
+    // mobileapp/app/test/api_contract_test.dart, which is where the jsep
+    // regression actually showed up.
     const ort = await import('onnxruntime-web')
     const session = await ort.InferenceSession.create(readFileSync(FIXTURE), {
       executionProviders: ['wasm'],

@@ -29,16 +29,66 @@ import 'dart:io';
 
 import 'package:flutter/services.dart' show rootBundle;
 
+import 'demo/demo_api.dart';
+import 'demo/demo_dataset.dart';
 import 'domain/geo.dart';
 import 'domain/risk_models.dart';
 import 'domain/taxonomy.dart';
 import 'domain/triage.dart';
 import 'domain/weather.dart';
+import 'kb/advisory.dart';
+import 'kb/knowledge_base.dart';
+import 'packs/pack.dart';
+import 'packs/pack_store.dart';
 
 const String _assetRoot = 'assets/web';
 
+/// Mirrors `UNVERIFIED_WEIGHT` and `INTENSITY_BANDS['severe']` in
+/// backend/app/routers/hotspots.py. The map renders both, so they have to be
+/// the same numbers the server would have sent.
+const double kUnverifiedWeight = 0.4;
+const double kSevereThreshold = 8.0;
+
 class LocalServer {
   HttpServer? _server;
+
+  DemoApi? _demo;
+  KnowledgeBase? _kb;
+  String? _kbPackKey;
+
+  /// In-flight pack install, if any.
+  ///
+  /// A 45 MB download takes a minute or more on a rural connection, so the
+  /// install runs in the background and the UI polls. Holding the HTTP request
+  /// open for the whole transfer would give the page a choice between a dead
+  /// spinner and a timeout, and neither tells the farmer whether to keep
+  /// waiting.
+  Map<String, dynamic>? _install;
+
+  bool get _installRunning => _install?['active'] == true;
+
+  /// The demo dataset, parsed once. 120 cases is nothing to hold, and
+  /// re-parsing 293 KB of JSON per request would be visible on a cheap handset.
+  Future<DemoApi> _demoApi() async {
+    return _demo ??= DemoApi(await DemoDataset.load());
+  }
+
+  /// The retriever over the active pack's KB pages, rebuilt only when the pack
+  /// changes. Indexing is cheap but not free, and it is not per-query work.
+  Future<KnowledgeBase?> _knowledgeBase() async {
+    final pack = await PackStore.instance.activePack();
+    if (pack == null) return null;
+    final key = '${pack.crop}@${pack.version}';
+    if (_kb != null && _kbPackKey == key) return _kb;
+    final docs = <String, String>{};
+    for (final f in pack.manifest.files) {
+      if (!f.path.startsWith('kb/') || !f.path.endsWith('.md')) continue;
+      final text = await PackStore.instance.readString(pack, f.path);
+      if (text != null) docs[f.path.substring(3)] = text;
+    }
+    _kbPackKey = key;
+    return _kb = KnowledgeBase.fromDocuments(docs);
+  }
 
   /// Shared instance - the WebView needs the origin, and the origin is not
   /// known until the OS assigns a port.
@@ -90,8 +140,20 @@ class LocalServer {
         ..add(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
       await req.response.close();
     } catch (_) {
-      // Unknown path: hand back index.html so client-side routing works on a
-      // deep link or a refresh.
+      // Unknown path. Client-side routing needs a deep link or a refresh to
+      // return index.html - but ONLY for navigation. Handing index.html back
+      // for a missing asset turns a 404 into a 200 full of HTML, and the
+      // browser then reports whatever confused thing it makes of that.
+      //
+      // This cost an afternoon: a missing ONNX runtime module came back as
+      // "Expected a JavaScript-or-Wasm module script but the server responded
+      // with a MIME type of text/html", which reads like a server
+      // misconfiguration rather than a file we forgot to ship.
+      if (_looksLikeAsset(rel)) {
+        req.response.statusCode = 404;
+        await req.response.close();
+        return;
+      }
       try {
         final idx = await rootBundle.load('$_assetRoot/index.html');
         req.response
@@ -105,6 +167,16 @@ class LocalServer {
       }
     }
   }
+
+  /// A path a browser fetches as a resource rather than navigates to. Anything
+  /// with a file extension we recognise is a resource; a route like
+  /// `/dashboard` or `/models` is not.
+  static final RegExp _assetExt = RegExp(
+    r'\.(js|mjs|css|json|wasm|map|png|jpe?g|svg|gif|webp|ico|woff2?|ttf|otf|txt|onnx|md)$',
+    caseSensitive: false,
+  );
+
+  bool _looksLikeAsset(String rel) => _assetExt.hasMatch(rel);
 
   ContentType _mime(String p) {
     if (p.endsWith('.html')) return ContentType.html;
@@ -204,23 +276,227 @@ class LocalServer {
           ],
         });
 
-      // No detector is bundled in this build. Report that honestly rather than
-      // returning a guessed class - the same rule the server follows.
+      // Detection comes from the installed crop pack. No pack, no detector -
+      // and that is reported rather than guessed around, because a confident
+      // wrong class is worse than an admitted absence.
       case '/detect/status':
+        return _json(req, await _detectStatus());
+
+      // The lab scanners, each from its own detector pack.
       case '/croprow/status':
+        return _json(req, await _detectorStatus('croprow', 'Crop row scan'));
       case '/crophealth/status':
-        return _json(req, {
-          'model_available': false,
-          'model_version': null,
-          'classes': kClassNames,
-          'note': 'No detector is bundled in this offline build. Photographs '
-              'are routed to the expert queue instead of being guessed at.',
-        });
+        return _json(req, await _detectorStatus('crophealth', 'Crop health scan'));
 
       case '/detect/thresholds':
+        return _json(req, await _detectThresholds());
+
       case '/croprow/thresholds':
+        return _json(req, await _detectorThresholds('croprow'));
       case '/crophealth/thresholds':
-        return _json(req, {'default': 0.25, 'per_class': {}});
+        return _json(req, await _detectorThresholds('crophealth'));
+
+      case '/croprow/model':
+        return _serveDetectorModel(req, 'croprow');
+      case '/crophealth/model':
+        return _serveDetectorModel(req, 'crophealth');
+
+      // The weights themselves, straight off disk. This is what makes the
+      // in-WebView ONNX scanner work with the radio off: the page fetches this
+      // URL exactly as it would fetch it from the server.
+      case '/detect/model':
+        return _serveModel(req);
+
+      // The photo upload path. This build cannot run it: inference happens in
+      // the page, which reads `inference: in_page` from /detect/status and
+      // never posts here. Anything that does reach this deserves a reason, not
+      // the generic "needs a network connection" - it is not a network problem
+      // and telling a farmer to find signal would waste their afternoon.
+      case '/detect':
+      case '/detect/frame':
+        {
+          final pack = await PackStore.instance.activePack();
+          return _json(req, {
+            'detail': pack == null
+                ? 'No crop pack is installed, so this photograph cannot be '
+                    'diagnosed on this phone. Install a crop from Menu > Crop '
+                    'models, then try again. This is not a network problem.'
+                : 'This build runs detection inside the app rather than on a '
+                    'server. If you are seeing this, reload the app.',
+            'model_available': pack != null,
+          }, status: 503);
+        }
+
+      // ----------------------------------------------------------------
+      // Advisory - retrieval-augmented, entirely on-device.
+      //
+      // BM25 over the installed pack's KB pages. No embedding model, no vector
+      // store, no network: the corpus is six markdown pages of agronomy and the
+      // queries are a class key plus a handful of field terms, which is exactly
+      // the shape lexical retrieval is good at. The scores are held to the
+      // Python service's by mobileapp/fixtures/kb.json.
+      // ----------------------------------------------------------------
+      case '/advisory/status':
+        {
+          final kb = await _knowledgeBase();
+          final pack = await PackStore.instance.activePack();
+          return _json(req, {
+            'backend': kb == null ? 'unavailable' : 'lexical-bm25',
+            'documents': kb == null
+                ? 0
+                : kb.chunks.map((c) => c.docId).toSet().length,
+            'chunks': kb?.chunks.length ?? 0,
+            'pack': pack == null ? null : '${pack.crop}@${pack.version}',
+            'offline': true,
+            'note': kb == null
+                ? 'No crop pack is installed, so there is no knowledge base to '
+                    'search. Install a crop first.'
+                : 'Retrieval runs on this device. There is no vector backend '
+                    'on a handset, so BM25 is the implementation rather than a '
+                    'fallback.',
+          });
+        }
+
+      case '/advisory/search':
+        {
+          final kb = await _knowledgeBase();
+          final query = q['q'] ?? '';
+          if (kb == null) {
+            return _json(req, {
+              'detail': 'No crop pack is installed, so there is nothing to '
+                  'search yet.'
+            }, status: 404);
+          }
+          final classFilter = q['class_key'] == null || q['class_key']!.isEmpty
+              ? null
+              : [q['class_key']!];
+          return _json(req, {
+            'query': query,
+            'backend': 'lexical-bm25',
+            'hits': kb.search(query, k: _int(q['k'], 5), classFilter: classFilter),
+            'offline': true,
+          });
+        }
+
+      case '/advisory':
+        {
+          final body = await _body(req);
+          return _json(req, await _advisory(body));
+        }
+
+      // ----------------------------------------------------------------
+      // Crop packs
+      // ----------------------------------------------------------------
+      case '/packs/installed':
+        {
+          final packs = await PackStore.instance.installed();
+          final active = await PackStore.instance.activePack();
+          return _json(req, {
+            'installed': [
+              for (final p in packs)
+                {
+                  'crop': p.crop,
+                  'kind': p.manifest.kind,
+                  'title': p.manifest.title,
+                  'version': p.version,
+                  'classes': p.manifest.classes,
+                  'total_bytes': p.manifest.totalBytes,
+                  'built_at': p.manifest.builtAt,
+                  'active': active != null && active.crop == p.crop,
+                }
+            ],
+            'active': active == null ? null : '${active.crop}@${active.version}',
+          });
+        }
+
+      // The catalogue, proxied through the local API so the web UI can offer
+      // crop management too rather than it living only in the first-launch
+      // Flutter screen.
+      // Where this handset looks for crops. Settable at runtime: a build
+      // pointed at a host that later goes away must be recoverable without
+      // reinstalling the app.
+      case '/packs/source':
+        {
+          if (req.method == 'POST') {
+            final body = await _body(req);
+            await PackStore.instance.setCatalogBase(body['url'] as String?);
+          }
+          return _json(req, {
+            'url': await PackStore.instance.catalogBase(),
+            'compiled_default': kPackCatalogBase,
+          });
+        }
+
+      case '/packs/catalog':
+        {
+          try {
+            final crops = await PackStore.instance.catalog();
+            return await _json(req, {
+              'crops': [
+                for (final c in crops)
+                  {
+                    'crop': c.crop,
+                    'kind': c.kind,
+                    'title': c.title,
+                    'latest': c.latest,
+                    'versions': [
+                      for (final v in c.versions)
+                        {
+                          'version': v.version,
+                          'total_bytes': v.totalBytes,
+                          'min_app_version': v.minAppVersion,
+                          'classes': v.classes,
+                        }
+                    ],
+                  }
+              ],
+            });
+          } on PackException catch (e) {
+            // This is the one call that needs a connection, so a failure here
+            // is expected offline rather than exceptional.
+            return _json(req, {'detail': e.message}, status: 503);
+          }
+        }
+
+      case '/packs/install':
+        {
+          // Validate the request before reporting on server state: a
+          // malformed body is malformed whether or not something else is
+          // running, and answering 409 to it sends the caller to retry a
+          // request that will never work.
+          final body = await _body(req);
+          final cropKey = body['crop'] as String?;
+          if (cropKey == null) {
+            return _json(req, {'detail': 'crop is required'}, status: 400);
+          }
+          if (_installRunning) {
+            return _json(req, {
+              'detail': 'An install is already running.',
+              'progress': _install,
+            }, status: 409);
+          }
+          final wanted = body['version'] as String?;
+          // Kick it off and answer immediately; /packs/progress carries the
+          // rest. Errors land in the progress record rather than on a request
+          // nobody is waiting on any more.
+          unawaited(_runInstall(cropKey, wanted));
+          return _json(req, {
+            'started': true,
+            'crop': cropKey,
+            'version': wanted,
+          }, status: 202);
+        }
+
+      case '/packs/progress':
+        return _json(
+            req,
+            _install ??
+                {
+                  'active': false,
+                  'phase': 'idle',
+                  'received_bytes': 0,
+                  'total_bytes': 0,
+                });
 
       case '/chat/status':
         return _json(req, {
@@ -229,27 +505,161 @@ class LocalServer {
               'forecasts and diagnosis guidance all work offline.',
         });
 
-      // Cross-farm intelligence needs other farmers' cases, so it is empty
-      // offline rather than fabricated.
+      // The officer views - dashboard, hotspot map, review queue - have two
+      // honest answers offline, and which one you get is the farmer's choice,
+      // not ours.
+      //
+      // `include_demo=true` (the UI's "Demo + live" toggle, and the default)
+      // serves the synthetic dataset bundled in the APK. Nothing about it is
+      // presented as real: every row carries `demo: true`, farmer names start
+      // "Demo" and the model version is `demo-seed`.
+      //
+      // `include_demo=false` serves genuinely empty results, because this
+      // device holds no other farmers' cases until it syncs.
+      //
+      // Either way the SHAPE is the server's. The UI reads these payloads
+      // positionally - `summary.cases.total`, `rows.find(...)` - so an
+      // `{items: [], offline: true}` envelope is not a softer failure than a
+      // 500, it is a harder one: the read throws during render, React unmounts
+      // the tree and the farmer gets a white screen with no way back.
       case '/hotspots':
-        return _json(req, {'cells': [], 'offline': true});
-      case '/hotspots/points':
-        return _json(req, {'points': [], 'offline': true});
-      case '/review/queue':
-        return _json(req, {'items': [], 'total': 0, 'offline': true});
-      case '/followups':
-        return _json(req, {'items': [], 'total': 0, 'offline': true});
-      case '/sensors':
-        return _json(req, {'items': [], 'total': 0, 'offline': true});
-      case '/dashboard/summary':
-        return _json(req, {'offline': true, 'total_cases': 0});
-    }
+        {
+          final days = _int(q['days'], 30);
+          final cell =
+              double.tryParse(q['cell_size_deg'] ?? '') ?? kDefaultCellDeg;
+          if (_includeDemo(q)) {
+            return _json(
+                req, (await _demoApi()).hotspots(days, cell, q['district']));
+          }
+          // The map prints `data.total_confirmed` and `data.unverified_weight`
+          // straight into its caption, so a short payload here does not crash -
+          // it renders the literal text "undefined confirmed - undefined
+          // pending". Quieter than a white screen and just as wrong.
+          return _json(req, {
+            'window_days': days,
+            'cell_size_deg': cell,
+            'unverified_weight': kUnverifiedWeight,
+            'total_cells': 0,
+            'total_confirmed': 0,
+            'total_unverified': 0,
+            'cells': const [],
+            'offline': true,
+          });
+        }
 
-    if (path.startsWith('/dashboard/') ||
-        path.startsWith('/review/') ||
-        path.startsWith('/sensors/') ||
-        path.startsWith('/followups/')) {
-      return _json(req, {'items': [], 'total': 0, 'offline': true});
+      case '/hotspots/points':
+        {
+          final days = _int(q['days'], 30);
+          if (_includeDemo(q)) {
+            return _json(
+                req, (await _demoApi()).hotspotPoints(days, q['district']));
+          }
+          return _json(req, {
+            'window_days': days,
+            'unverified_weight': kUnverifiedWeight,
+            // The heat ramp's top of scale. Falling back to the client default
+            // would quietly re-scale the map the moment sync fills it in.
+            'severe_threshold': kSevereThreshold,
+            'total_confirmed': 0,
+            'total_unverified': 0,
+            'total_points': 0,
+            'points': const [],
+            'offline': true,
+          });
+        }
+
+      // list[CaseOut] / list[FollowUpOut] / list[SensorReadingOut] - JSON
+      // arrays on the server, so arrays here.
+      case '/review/queue':
+        return _json(
+            req,
+            _includeDemo(q)
+                ? (await _demoApi()).reviewQueue(
+                    limit: _int(q['limit'], 60),
+                    onlyEscalated: q['only_escalated'] == 'true',
+                  )
+                : const []);
+
+      case '/dashboard/cases':
+        return _json(req, const []);
+
+      case '/followups':
+        return _json(
+            req,
+            _includeDemo(q)
+                ? (await _demoApi()).followUps(limit: _int(q['limit'], 100))
+                : const []);
+
+      case '/sensors':
+        return _json(
+            req,
+            _includeDemo(q)
+                ? (await _demoApi()).sensors(limit: _int(q['limit'], 200))
+                : const []);
+
+      case '/dashboard/summary':
+        return _json(
+            req,
+            _includeDemo(q)
+                ? (await _demoApi())
+                    .dashboardSummary(_int(q['days'], 30), q['district'])
+                : _dashboardSummary(_int(q['days'], 30), q['district']));
+
+      case '/dashboard/trend':
+        return _json(
+            req,
+            _includeDemo(q)
+                ? (await _demoApi()).dashboardTrend(
+                    _int(q['days'], 30), q['district'], q['class_key'])
+                : _dashboardTrend(_int(q['days'], 30), q['class_key']));
+
+      case '/dashboard/districts':
+        return _json(
+            req,
+            _includeDemo(q)
+                ? (await _demoApi()).dashboardDistricts()
+                : {'districts': const [], 'offline': true});
+
+      case '/review/stats/accuracy':
+        if (_includeDemo(q)) return _json(req, (await _demoApi()).accuracy());
+        return _json(req, {
+          'reviewed': 0,
+          'confirmed': 0,
+          'corrected': 0,
+          'rejected': 0,
+          'pending': 0,
+          'field_accuracy': null,
+          'per_class': [],
+          'retraining_samples_pending_export': 0,
+          'offline': true,
+        });
+
+      case '/followups/stats':
+        if (_includeDemo(q)) {
+          return _json(req, (await _demoApi()).followUpStats(_int(q['days'], 90)));
+        }
+        return _json(req, {
+          'window_days': _int(q['days'], 90),
+          'counts': const <String, int>{},
+          'closed': 0,
+          'overdue': 0,
+          'improvement_rate': null,
+          'offline': true,
+        });
+
+      case '/sensors/summary':
+        if (_includeDemo(q)) {
+          return _json(
+              req,
+              (await _demoApi()).sensorSummary(
+                  _int(q['days'], 14), q['metric'] ?? 'trap_count'));
+        }
+        return _json(req, {
+          'metric': q['metric'] ?? 'trap_count',
+          'window_days': _int(q['days'], 14),
+          'cells': const [],
+          'offline': true,
+        });
     }
 
     return _json(req, {
@@ -257,6 +667,372 @@ class LocalServer {
           'in the offline build.'
     }, status: 503);
   }
+
+  int _int(String? raw, int fallback) => int.tryParse(raw ?? '') ?? fallback;
+
+  /// `true` unless the caller explicitly asked for live-only. Mirrors the
+  /// server's `include_demo` default and the UI's "Demo + live" toggle.
+  bool _includeDemo(Map<String, String> q) {
+    final raw = q['include_demo'];
+    if (raw == null) return true;
+    return !(raw == 'false' || raw == '0');
+  }
+
+  Future<void> _runInstall(String cropKey, String? wanted) async {
+    _install = {
+      'active': true,
+      'crop': cropKey,
+      'version': wanted,
+      'phase': 'catalog',
+      'received_bytes': 0,
+      'total_bytes': 0,
+      'file': '',
+      'error': null,
+    };
+    try {
+      final crops = await PackStore.instance.catalog();
+      final crop = crops.firstWhere(
+        (c) => c.crop == cropKey,
+        orElse: () => throw PackException('No crop $cropKey in the catalogue.'),
+      );
+      final version = wanted == null
+          ? crop.latestVersion
+          : crop.versions.firstWhere(
+              (v) => v.version == wanted,
+              orElse: () => throw PackException('No version $wanted for $cropKey.'),
+            );
+      if (version == null) {
+        throw PackException('No version available for $cropKey.');
+      }
+      final installed = await PackStore.instance.install(
+        crop,
+        version,
+        onProgress: (p) {
+          _install = {
+            'active': true,
+            'crop': cropKey,
+            'version': version.version,
+            'phase': p.phase,
+            'received_bytes': p.receivedBytes,
+            'total_bytes': p.totalBytes,
+            'file': p.file,
+            'error': null,
+          };
+        },
+      );
+      // The KB is indexed per pack, so a new install must invalidate it or the
+      // advisory would keep answering from the previous crop.
+      _kb = null;
+      _kbPackKey = null;
+      _install = {
+        'active': false,
+        'crop': installed.crop,
+        'version': installed.version,
+        'phase': 'done',
+        'received_bytes': installed.manifest.totalBytes,
+        'total_bytes': installed.manifest.totalBytes,
+        'file': '',
+        'error': null,
+      };
+    } catch (e) {
+      _install = {
+        'active': false,
+        'crop': cropKey,
+        'version': wanted,
+        'phase': 'failed',
+        'received_bytes': 0,
+        'total_bytes': 0,
+        'file': '',
+        'error': '$e',
+      };
+    }
+  }
+
+  /// `POST /api/advisory` - retrieval, composition, safety gate, all on-device.
+  Future<Map<String, dynamic>> _advisory(Map<String, dynamic> body) async {
+    final kb = await _knowledgeBase();
+    final pack = await PackStore.instance.activePack();
+    final lang = (body['language'] as String?) ?? 'en';
+    final classKey = body['class_key'] as String?;
+    final confidence = (body['confidence'] as num?)?.toDouble();
+
+    final lat = (body['latitude'] as num?)?.toDouble() ?? 18.52;
+    final lon = (body['longitude'] as num?)?.toDouble() ?? 73.86;
+    final risk = _risk(lat, lon);
+
+    // A caller that names a class is reporting a detection. Leaving
+    // detectionCount at 0 made triage fire `no_detection` on every advisory,
+    // which set self_treatment_allowed false and withheld the dose table for a
+    // confidently diagnosed case - the safety gate firing on its own default.
+    final hasDetection = classKey != null && classKey.isNotEmpty;
+    final triage = evaluateTriage(
+      modelAvailable: pack != null,
+      predictedClass: classKey,
+      confidence: confidence,
+      detectionCount: hasDetection ? 1 : 0,
+      risk: {
+        'top_threat': risk['top_threat'],
+        'overall_level': risk['overall_level'],
+      },
+    ).toJson();
+
+    if (kb == null) {
+      // No pack, so no knowledge base and no dose tables. Say that plainly
+      // rather than composing an advisory with an empty treatment section,
+      // which reads as "nothing to do".
+      return {
+        'advisory': null,
+        'triage': triage,
+        'risk': risk,
+        'language': lang,
+        'detail': 'No crop pack is installed, so there is no knowledge base to '
+            'advise from. Install a crop to get treatment guidance offline.',
+        'offline': true,
+      };
+    }
+
+    final stringsRaw = await PackStore.instance.readString(pack!, 'strings.json');
+    final strings = AdvisoryStrings.fromPackJson(
+      stringsRaw == null
+          ? const {}
+          : jsonDecode(stringsRaw) as Map<String, dynamic>,
+    );
+    final classNames = stringsRaw == null
+        ? const <String, dynamic>{}
+        : ((jsonDecode(stringsRaw) as Map<String, dynamic>)['classes'] as Map?)
+                ?.cast<String, dynamic>() ??
+            const <String, dynamic>{};
+
+    String displayFor(String key, String l) {
+      final byLang = (classNames[l] as Map?)?.cast<String, dynamic>();
+      // Pack names first, then the app's built-in taxonomy: a downloaded crop
+      // must be able to name classes this app release has never heard of.
+      return (byLang?[key] as String?) ?? displayName(key, l);
+    }
+
+    final advisory = composeAdvisory(
+      input: AdvisoryInput(
+        classKey: classKey,
+        language: lang,
+        confidence: confidence,
+        question: body['question'] as String?,
+        risk: risk,
+        triage: triage,
+        modelAvailable: true,
+        hasDetection: hasDetection,
+      ),
+      kb: kb,
+      strings: strings,
+      displayFor: displayFor,
+    );
+
+    return {
+      'advisory': advisory,
+      'triage': triage,
+      'risk': (body['include_risk'] as bool? ?? false) ? risk : null,
+      'language': lang,
+      'offline': true,
+    };
+  }
+
+  Future<Map<String, dynamic>> _detectStatus() async {
+    final pack = await PackStore.instance.activePack();
+    if (pack == null) {
+      return {
+        'model_available': false,
+        'model_version': null,
+        'classes': kClassNames,
+        'inference': 'in_page',
+        'note': 'No crop pack is installed, so photographs are routed to the '
+            'expert queue instead of being guessed at. Install a crop to '
+            'enable on-device detection.',
+      };
+    }
+    return {
+      'model_available': true,
+      'model_version': '${pack.crop}@${pack.version}',
+      'classes': pack.manifest.classes,
+      'crop': pack.crop,
+      'pack_version': pack.version,
+      // Tells the page to run inference itself rather than POSTing the photo.
+      // There is no ONNX runtime in this Dart process, but there is one in the
+      // WebView, already fetching these same weights for the live scanner. The
+      // server build has no such key, so the page keeps uploading there.
+      'inference': 'in_page',
+      'note': 'Detection runs in this app, on this device, from the installed '
+          '${pack.crop} pack.',
+    };
+  }
+
+  Future<Map<String, dynamic>> _detectThresholds() async {
+    final pack = await PackStore.instance.activePack();
+    if (pack == null) return {'default': 0.25, 'per_class': const {}};
+    final raw = await PackStore.instance.readString(pack, 'thresholds.json');
+    if (raw == null) return {'default': 0.25, 'per_class': const {}};
+    try {
+      final parsed = jsonDecode(raw) as Map<String, dynamic>;
+      // Thresholds are tuned for THIS pack's weights. Passing them through
+      // unchanged is the point; reshaping or defaulting them here would be the
+      // silent accuracy regression the pack format exists to prevent.
+      return {
+        'classes': parsed['classes'] ?? pack.manifest.classes,
+        'per_class': parsed['per_class'] ?? parsed['conf_thresholds'] ?? const {},
+        'default': parsed['default'] ?? parsed['conf_threshold_default'] ?? 0.25,
+        'low_confidence_threshold': parsed['low_confidence_threshold'],
+        'pack_version': '${pack.crop}@${pack.version}',
+      };
+    } catch (_) {
+      return {'default': 0.25, 'per_class': const {}};
+    }
+  }
+
+  /// The lab scanners read `status.available`, not `model_available` - they
+  /// were written against the server's CropRow shape, which differs from the
+  /// potato one. Returning the wrong key here reads as "no model" with no
+  /// error anywhere, so the shape is copied rather than unified.
+  Future<Map<String, dynamic>> _detectorStatus(String name, String title) async {
+    final pack = await PackStore.instance.packFor(name);
+    if (pack == null) {
+      return {
+        'available': false,
+        'version': null,
+        'classes': const [],
+        'conf_threshold': 0.25,
+        'iou_threshold': 0.45,
+        'note': '$title is not installed on this phone. Add it from '
+            'Menu > Crop models.',
+      };
+    }
+    final cfg = await _packJson(pack, 'thresholds.json');
+    return {
+      'available': true,
+      'version': '${pack.crop}@${pack.version}',
+      'classes': pack.manifest.classes,
+      'conf_threshold': cfg['default'] ?? 0.25,
+      'iou_threshold': cfg['iou_threshold'] ?? 0.45,
+      'note': null,
+    };
+  }
+
+  Future<Map<String, dynamic>> _detectorThresholds(String name) async {
+    final pack = await PackStore.instance.packFor(name);
+    if (pack == null) {
+      return {'default': 0.25, 'per_class': const {}, 'classes': const []};
+    }
+    final cfg = await _packJson(pack, 'thresholds.json');
+    return {
+      'classes': cfg['classes'] ?? pack.manifest.classes,
+      'per_class': cfg['per_class'] ?? const {},
+      'default': cfg['default'] ?? 0.25,
+      'iou_threshold': cfg['iou_threshold'] ?? 0.45,
+      'pack_version': '${pack.crop}@${pack.version}',
+    };
+  }
+
+  Future<Map<String, dynamic>> _packJson(InstalledPack pack, String rel) async {
+    final raw = await PackStore.instance.readString(pack, rel);
+    if (raw == null) return const {};
+    try {
+      return jsonDecode(raw) as Map<String, dynamic>;
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  Future<void> _serveDetectorModel(HttpRequest req, String name) async {
+    final pack = await PackStore.instance.packFor(name);
+    final bytes =
+        pack == null ? null : await PackStore.instance.readFile(pack, 'model.onnx');
+    if (bytes == null) {
+      return _json(req, {
+        'detail': 'The $name detector is not installed on this phone. Add it '
+            'from Menu > Crop models.'
+      }, status: 404);
+    }
+    req.response
+      ..statusCode = 200
+      ..headers.contentType = ContentType.binary
+      ..headers.set('Cache-Control', 'public, max-age=86400')
+      ..add(bytes);
+    await req.response.close();
+  }
+
+  Future<void> _serveModel(HttpRequest req) async {
+    final pack = await PackStore.instance.activePack();
+    final bytes =
+        pack == null ? null : await PackStore.instance.readFile(pack, 'model.onnx');
+    if (bytes == null) {
+      return _json(req, {
+        'detail': 'No crop pack is installed, so there are no weights to '
+            'serve. Install a crop from the catalogue first.'
+      }, status: 404);
+    }
+    req.response
+      ..statusCode = 200
+      ..headers.contentType = ContentType.binary
+      // Immutable for the life of this pack version, and the scanner refetches
+      // it on every cold start otherwise.
+      ..headers.set('Cache-Control', 'public, max-age=86400')
+      ..add(bytes);
+    await req.response.close();
+  }
+
+  /// `GET /api/dashboard/summary`, with every count genuinely zero.
+  ///
+  /// This device holds no case store yet, so zero is the true answer rather
+  /// than a placeholder. Every key the server sends is present: the dashboard
+  /// destructures `cases` and maps `by_class` without guarding, and a missing
+  /// key there is a crash, not a blank panel.
+  Map<String, dynamic> _dashboardSummary(int days, String? district) => {
+        'window_days': days,
+        'district': district,
+        'cases': const {
+          'total': 0,
+          'from_image': 0,
+          'proactive_risk_only': 0,
+          'escalated': 0,
+          'pending_review': 0,
+          'expert_confirmed': 0,
+          'escalation_rate': null,
+        },
+        'by_class': const [],
+        // The server seeds all three levels, so the panel lists them at zero
+        // instead of rendering nothing at all.
+        'by_risk_level': const {'low': 0, 'medium': 0, 'high': 0},
+        'high_risk_districts': const [],
+        'follow_ups_overdue': 0,
+        'active_sensor_devices': 0,
+        'offline': true,
+      };
+
+  /// `GET /api/dashboard/trend` - one zeroed row per day in the window.
+  ///
+  /// The server emits `days + 1` rows covering the whole window whether or not
+  /// cases exist, so the chart draws a flat line on a real date axis. An empty
+  /// series would instead collapse the axis and look like a broken chart.
+  Map<String, dynamic> _dashboardTrend(int days, String? classKey) {
+    final since = DateTime.now().toUtc().subtract(Duration(days: days));
+    final series = [
+      for (var i = 0; i <= days; i++)
+        {
+          'date': _isoDate(since.add(Duration(days: i))),
+          'total': 0,
+          'confirmed': 0,
+          'escalated': 0,
+          'high_risk': 0,
+        }
+    ];
+    return {
+      'days': days,
+      'class_key': classKey,
+      'series': series,
+      'offline': true,
+    };
+  }
+
+  String _isoDate(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
 
   Future<Map<String, dynamic>> _body(HttpRequest req) async {
     if (req.method != 'POST') return {};

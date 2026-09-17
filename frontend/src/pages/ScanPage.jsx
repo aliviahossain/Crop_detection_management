@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api.js'
+import { detectPhoto } from '../lib/detectPhoto.js'
 import { useLang, useT } from '../lib/i18n.js'
 import { LiveDetector, MODE } from '../lib/liveDetector.js'
 import { STATUS, VerdictStabilizer } from '../lib/stabilizer.js'
@@ -247,7 +248,7 @@ export default function ScanPage() {
         form.append('longitude', position.coords.longitude.toFixed(5))
       }
 
-      const result = await api.detect(form)
+      const result = await detectPhoto(form)
       setAccepted(result)
       stopCamera()
     } catch (err) {

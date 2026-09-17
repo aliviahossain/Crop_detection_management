@@ -13,8 +13,11 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:file_picker/file_picker.dart';
 
 import 'local_server.dart';
+import 'packs/crop_picker.dart';
+import 'packs/pack_store.dart';
 
 // The on-device server binds to an OS-assigned port, so the URL is not known
 // until it starts.
@@ -54,6 +57,12 @@ class _WebShellState extends State<WebShell> {
   bool _slow = false;
   String? _error;
 
+  /// True once we know whether a crop pack is installed. Until then neither
+  /// the picker nor the WebView should be shown, or a farmer who already chose
+  /// a crop would see the picker flash on every cold start.
+  bool _packChecked = false;
+  bool _needsCrop = false;
+
   @override
   void initState() {
     super.initState();
@@ -67,9 +76,27 @@ class _WebShellState extends State<WebShell> {
     try {
       final origin = await LocalServer.instance.start();
       debugPrint('[cropguard] on-device server listening at $origin');
+
+      // Ask which crop before loading the UI, not after: the scanner reads
+      // /detect/status once at startup, so a pack installed later would leave
+      // the page convinced there is no detector until a manual reload.
+      final pack = await PackStore.instance.activePack();
+      debugPrint('[cropguard] active pack: '
+          '${pack == null ? 'none' : '${pack.crop}@${pack.version}'}');
       if (!mounted) return;
+      if (pack == null) {
+        setState(() {
+          _origin = origin;
+          _packChecked = true;
+          _needsCrop = true;
+          _loading = false;
+        });
+        return;
+      }
+
       setState(() {
         _origin = origin;
+        _packChecked = true;
         _controller = _buildController(origin);
       });
     } catch (e, st) {
@@ -134,16 +161,88 @@ class _WebShellState extends State<WebShell> {
         ),
       );
 
+    // Forward the page's console to logcat. Without this a JavaScript error
+    // inside the bundled UI is completely invisible from the host: the WebView
+    // just goes white, `onWebResourceError` says nothing because the document
+    // loaded fine, and the only way to tell a blank page from a crashed one is
+    // to guess. `adb logcat -s flutter` now shows the actual stack.
+    c.setOnConsoleMessage((msg) {
+      debugPrint('[cropguard][web] ${msg.level.name}: ${msg.message}');
+    });
+
     // Android specifics: grant the WebView's camera request (the scanner), and
     // allow getUserMedia without a synthetic user gesture.
     final platform = c.platform;
     if (platform is AndroidWebViewController) {
       platform.setMediaPlaybackRequiresUserGesture(false);
       platform.setOnPlatformPermissionRequest((request) => request.grant());
+
+      // Without this, every <input type="file"> in the page does NOTHING.
+      //
+      // Android's WebView does not open a file chooser on its own: it asks the
+      // host app via onShowFileChooser, and a host that does not answer leaves
+      // the tap silently dead - no picker, no error, no console message. That
+      // is the worst kind of bug to report, because there is nothing to report.
+      // It took out video upload on both lab scanners and the photo picker on
+      // Check crop.
+      platform.setOnShowFileSelector(_pickFiles);
     }
 
     c.loadRequest(Uri.parse(origin));
     return c;
+  }
+
+  /// Answers the page's `<input type="file">`.
+  ///
+  /// Returns file:// URIs, or an empty list when the user backs out - which the
+  /// WebView reads as "cancelled" and leaves the input untouched, so the same
+  /// clip can be picked again afterwards.
+  Future<List<String>> _pickFiles(FileSelectorParams params) async {
+    final accepts = params.acceptTypes.join(',');
+    final wantsVideo = accepts.contains('video');
+    final wantsImage = accepts.contains('image');
+
+    // Narrow the picker to what the input actually asked for. `accept="video/*"`
+    // showing a photo grid is how you get a farmer picking a still that the
+    // clip scanner then refuses.
+    final FileType type;
+    if (wantsVideo && !wantsImage) {
+      type = FileType.video;
+    } else if (wantsImage && !wantsVideo) {
+      type = FileType.image;
+    } else if (wantsImage || wantsVideo) {
+      type = FileType.media;
+    } else {
+      type = FileType.any;
+    }
+
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: type,
+        allowMultiple: params.mode == FileSelectorMode.openMultiple,
+      );
+      if (result == null) return const [];
+      return [
+        for (final f in result.files)
+          if (f.path != null) Uri.file(f.path!).toString(),
+      ];
+    } catch (e) {
+      // A picker that throws must still return, or the WebView leaves the
+      // input in a pending state and the next tap does nothing either.
+      debugPrint('[cropguard] file selector failed: $e');
+      return const [];
+    }
+  }
+
+  /// Leaves the picker, either with a pack installed or explicitly skipped.
+  void _leavePicker() {
+    final origin = _origin;
+    if (origin == null) return;
+    setState(() {
+      _needsCrop = false;
+      _loading = true;
+      _controller = _buildController(origin);
+    });
   }
 
   Future<void> _reload() async {
@@ -185,18 +284,22 @@ class _WebShellState extends State<WebShell> {
         }
         navigator.maybePop();
       },
-      child: Scaffold(
-        body: SafeArea(
-          child: Stack(
-            children: [
-              if (_controller != null)
-                WebViewWidget(controller: _controller!),
-              if (_error != null) _ErrorPane(message: _error!, onRetry: _reload),
-              if (_loading && _error == null) _LoadingPane(slow: _slow),
-            ],
-          ),
-        ),
-      ),
+      child: _needsCrop
+          ? CropPickerPage(onDone: _leavePicker, onSkip: _leavePicker)
+          : Scaffold(
+              body: SafeArea(
+                child: Stack(
+                  children: [
+                    if (_controller != null)
+                      WebViewWidget(controller: _controller!),
+                    if (_error != null)
+                      _ErrorPane(message: _error!, onRetry: _reload),
+                    if ((_loading || !_packChecked) && _error == null)
+                      _LoadingPane(slow: _slow),
+                  ],
+                ),
+              ),
+            ),
     );
   }
 }
