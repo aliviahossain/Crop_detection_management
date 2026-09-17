@@ -71,6 +71,20 @@ DETECTORS = {
 }
 
 
+def write_text(path: Path, text: str) -> None:
+    """Write UTF-8 with LF line endings, always.
+
+    ``Path.write_text`` opens in text mode, so on Windows every newline is
+    written as CRLF. The manifest hashes THESE bytes, so a pack built on
+    Windows and served from anywhere that normalises line endings - git, and
+    therefore GitHub Pages - fails its own checksum on install. Three of the
+    ten potato files did exactly that, and the installer correctly refused
+    the pack it had just published.
+    """
+    with path.open("w", encoding="utf-8", newline="\n") as fh:
+        fh.write(text)
+
+
 def sha256(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as fh:
@@ -173,7 +187,8 @@ def build_detector_pack(name: str, version: str, min_app_version: str) -> Path:
         )
     shutil.copy2(model, out / "model.onnx")
 
-    (out / "thresholds.json").write_text(
+    write_text(
+        out / "thresholds.json",
         json.dumps(
             {
                 "classes": spec["classes"],
@@ -183,9 +198,9 @@ def build_detector_pack(name: str, version: str, min_app_version: str) -> Path:
             },
             indent=2,
         ),
-        encoding="utf-8",
     )
-    (out / "taxonomy.json").write_text(
+    write_text(
+        out / "taxonomy.json",
         json.dumps(
             {
                 "crop": name,
@@ -201,7 +216,6 @@ def build_detector_pack(name: str, version: str, min_app_version: str) -> Path:
             ensure_ascii=False,
             indent=2,
         ),
-        encoding="utf-8",
     )
 
     payload = sorted(
@@ -227,8 +241,9 @@ def build_detector_pack(name: str, version: str, min_app_version: str) -> Path:
         "signature": None,
     }
     manifest["total_bytes"] = sum(f["bytes"] for f in manifest["files"])
-    (out / "manifest.json").write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+    write_text(
+        out / "manifest.json",
+        json.dumps(manifest, ensure_ascii=False, indent=2)
     )
     print(
         "Built %s@%s (detector): %d files, %.1f MB -> %s"
@@ -266,11 +281,13 @@ def build_pack(
         )
     shutil.copy2(thresholds, out / "thresholds.json")
 
-    (out / "taxonomy.json").write_text(
-        json.dumps(build_taxonomy(crop), ensure_ascii=False, indent=2), encoding="utf-8"
+    write_text(
+        out / "taxonomy.json",
+        json.dumps(build_taxonomy(crop), ensure_ascii=False, indent=2),
     )
-    (out / "strings.json").write_text(
-        json.dumps(build_strings(crop), ensure_ascii=False, indent=2), encoding="utf-8"
+    write_text(
+        out / "strings.json",
+        json.dumps(build_strings(crop), ensure_ascii=False, indent=2),
     )
 
     tax = json.loads((out / "taxonomy.json").read_text(encoding="utf-8"))
@@ -312,8 +329,9 @@ def build_pack(
         "signature": None,
     }
     manifest["total_bytes"] = sum(f["bytes"] for f in manifest["files"])
-    (out / "manifest.json").write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+    write_text(
+        out / "manifest.json",
+        json.dumps(manifest, ensure_ascii=False, indent=2)
     )
     print(
         "Built %s@%s: %d files, %.1f MB -> %s"
@@ -374,7 +392,7 @@ def build_index() -> Path:
     }
     DIST.mkdir(parents=True, exist_ok=True)
     path = DIST / "index.json"
-    path.write_text(json.dumps(index, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_text(path, json.dumps(index, ensure_ascii=False, indent=2))
     print("Index: %d crop(s) -> %s" % (len(crops), path))
     return path
 
