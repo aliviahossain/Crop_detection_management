@@ -17,7 +17,18 @@
 // same tuned per-class cut-offs as the server. Otherwise the same leaf would be
 // judged one way while scanning and another way after pressing Accept.
 
-import * as ort from 'onnxruntime-web'
+// The WASM-only entry, not the default one.
+//
+// `onnxruntime-web` resolves to the bundle that also carries the WebGPU/JSEP
+// backend, and that build dynamically imports `ort-wasm-simd-threaded.jsep.mjs`
+// at session creation even when you ask for the 'wasm' provider and a single
+// thread. We do not ship that 26.5 MB binary, so the import 404'd and every
+// on-device session failed with "no available backend found".
+//
+// `/wasm` requests only `ort-wasm-simd-threaded.{mjs,wasm}`, which is exactly
+// what scripts/copy-ort-runtime.mjs stages. WebGPU is no loss here: the target
+// is a cheap Android handset where the WASM path is what actually runs.
+import * as ort from 'onnxruntime-web/wasm'
 import { decodeDetections, letterboxParams } from './yoloDecode.js'
 import { api } from './api.js'
 

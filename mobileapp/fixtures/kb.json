@@ -1,0 +1,665 @@
+{
+  "suite": "kb",
+  "source": "backend/app/services/knowledge_base.py",
+  "description": "Tokenizer, markdown chunking and BM25 ranking for the on-device knowledge base. The phone has no vector backend, so these ARE the retrieval semantics, not a fallback.",
+  "corpus": {
+    "doc_count": 6,
+    "chunk_count": 44,
+    "chunk_ids": [
+      "potato_early_blight#0",
+      "potato_early_blight#1",
+      "potato_early_blight#2",
+      "potato_early_blight#3",
+      "potato_early_blight#4",
+      "potato_early_blight#5",
+      "potato_early_blight#6",
+      "potato_early_blight#7",
+      "potato_early_blight#8",
+      "potato_healthy#0",
+      "potato_healthy#1",
+      "potato_healthy#2",
+      "potato_healthy#3",
+      "potato_late_blight#0",
+      "potato_late_blight#1",
+      "potato_late_blight#2",
+      "potato_late_blight#3",
+      "potato_late_blight#4",
+      "potato_late_blight#5",
+      "potato_late_blight#6",
+      "potato_late_blight#7",
+      "potato_late_blight#8",
+      "potato_late_blight#9",
+      "potato_late_blight#10",
+      "potato_pests#0",
+      "potato_pests#1",
+      "potato_pests#2",
+      "potato_pests#3",
+      "potato_pests#4",
+      "potato_pests#5",
+      "potato_pests#6",
+      "referral_and_ipdm#0",
+      "referral_and_ipdm#1",
+      "referral_and_ipdm#2",
+      "referral_and_ipdm#3",
+      "referral_and_ipdm#4",
+      "safe_input_usage#0",
+      "safe_input_usage#1",
+      "safe_input_usage#2",
+      "safe_input_usage#3",
+      "safe_input_usage#4",
+      "safe_input_usage#5",
+      "safe_input_usage#6",
+      "safe_input_usage#7"
+    ]
+  },
+  "cases": [
+    {
+      "id": "plain_prose",
+      "why": "Baseline: lowercasing and stopword removal.",
+      "fn": "tokenize",
+      "input": {
+        "text": "The white downy growth on the underside of a leaf"
+      },
+      "expect": {
+        "tokens": [
+          "white",
+          "downy",
+          "growth",
+          "underside",
+          "leaf"
+        ]
+      }
+    },
+    {
+      "id": "dose_decimal",
+      "why": "A decimal dose must survive as one token, not split at the point.",
+      "fn": "tokenize",
+      "input": {
+        "text": "Apply mancozeb 2.5 g/litre of water"
+      },
+      "expect": {
+        "tokens": [
+          "apply",
+          "mancozeb",
+          "2.5",
+          "litre",
+          "water"
+        ]
+      }
+    },
+    {
+      "id": "percentage",
+      "why": "Percent strings are how labels express concentration.",
+      "fn": "tokenize",
+      "input": {
+        "text": "Mancozeb 75% WP at 0.2%"
+      },
+      "expect": {
+        "tokens": [
+          "mancozeb",
+          "75",
+          "wp",
+          "0.2"
+        ]
+      }
+    },
+    {
+      "id": "hyphenated",
+      "why": "Hyphens join product names and must not split them.",
+      "fn": "tokenize",
+      "input": {
+        "text": "metalaxyl-m + mancozeb-75 ws"
+      },
+      "expect": {
+        "tokens": [
+          "metalaxyl-m",
+          "mancozeb-75",
+          "ws"
+        ]
+      }
+    },
+    {
+      "id": "single_chars",
+      "why": "Single characters are dropped AFTER stopwords, changing doc length.",
+      "fn": "tokenize",
+      "input": {
+        "text": "a b c 1 2 potato"
+      },
+      "expect": {
+        "tokens": [
+          "potato"
+        ]
+      }
+    },
+    {
+      "id": "mixed_case_units",
+      "why": "Units and case: kg/ha, ML, pH.",
+      "fn": "tokenize",
+      "input": {
+        "text": "Use 2 kg/ha at pH 6.5 in 500 ML water"
+      },
+      "expect": {
+        "tokens": [
+          "use",
+          "kg",
+          "ha",
+          "ph",
+          "6.5",
+          "500",
+          "ml",
+          "water"
+        ]
+      }
+    },
+    {
+      "id": "all_stopwords",
+      "why": "A query of nothing but stopwords must tokenize to empty.",
+      "fn": "tokenize",
+      "input": {
+        "text": "the a an and or of to in is are"
+      },
+      "expect": {
+        "tokens": []
+      }
+    },
+    {
+      "id": "empty",
+      "why": "Empty input, empty token list - not a crash.",
+      "fn": "tokenize",
+      "input": {
+        "text": ""
+      },
+      "expect": {
+        "tokens": []
+      }
+    },
+    {
+      "id": "punctuation_only",
+      "why": "Punctuation yields nothing; the regex needs a leading alnum.",
+      "fn": "tokenize",
+      "input": {
+        "text": "--- ... ***"
+      },
+      "expect": {
+        "tokens": []
+      }
+    },
+    {
+      "id": "devanagari",
+      "why": "Non-latin script is out of the regex class entirely.",
+      "fn": "tokenize",
+      "input": {
+        "text": "बटाटा करपा"
+      },
+      "expect": {
+        "tokens": []
+      }
+    },
+    {
+      "id": "late_blight",
+      "why": "Front matter with a block list of sources and a class tag.",
+      "fn": "load_chunks",
+      "input": {
+        "doc": "potato_late_blight.md"
+      },
+      "expect": {
+        "chunk_count": 11,
+        "chunk_ids": [
+          "potato_late_blight#0",
+          "potato_late_blight#1",
+          "potato_late_blight#2",
+          "potato_late_blight#3",
+          "potato_late_blight#4",
+          "potato_late_blight#5",
+          "potato_late_blight#6",
+          "potato_late_blight#7",
+          "potato_late_blight#8",
+          "potato_late_blight#9",
+          "potato_late_blight#10"
+        ],
+        "sections": [
+          "What it is",
+          "How to confirm it in the field",
+          "Conditions that drive it",
+          "Immediate action (first 24-48 hours)",
+          "Chemical management",
+          "Protectant (before disease appears, or when risk forecast is HIGH)",
+          "Curative / systemic (only once symptoms are present or a Smith Period has fired)",
+          "Resistance management (this part is not optional)",
+          "Cultural and preventive practice (IPDM core)",
+          "When to escalate instead of self-treating",
+          "Follow-up"
+        ],
+        "title": "Potato Late Blight (Phytophthora infestans)",
+        "classes": [
+          "potato_late_blight"
+        ],
+        "kind": "disease",
+        "sources": [
+          "ICAR-Central Potato Research Institute (CPRI), Shimla - potato package of practices",
+          "Directorate of Plant Protection, Quarantine & Storage (DPPQS), Central Insecticides Board approved labels",
+          "CIP / FAO integrated late blight management guidance"
+        ]
+      }
+    },
+    {
+      "id": "safe_input_usage",
+      "why": "A cross-cutting page with no class tag.",
+      "fn": "load_chunks",
+      "input": {
+        "doc": "safe_input_usage.md"
+      },
+      "expect": {
+        "chunk_count": 8,
+        "chunk_ids": [
+          "safe_input_usage#0",
+          "safe_input_usage#1",
+          "safe_input_usage#2",
+          "safe_input_usage#3",
+          "safe_input_usage#4",
+          "safe_input_usage#5",
+          "safe_input_usage#6",
+          "safe_input_usage#7"
+        ],
+        "sections": [
+          "Safe Input Usage",
+          "Before you buy",
+          "Before you spray",
+          "While spraying",
+          "After spraying",
+          "Record keeping",
+          "In case of exposure or poisoning",
+          "Reducing chemical use overall"
+        ],
+        "title": "Safe Pesticide Use, Residues and Worker Protection",
+        "classes": [
+          "potato_late_blight",
+          "potato_early_blight",
+          "potato_tuber_moth",
+          "aphid_vector"
+        ],
+        "kind": "safety",
+        "sources": [
+          "Insecticides Act 1968 and Rules 1971 (India)",
+          "Central Insecticides Board & Registration Committee (CIB&RC) product labels",
+          "FAO/WHO International Code of Conduct on Pesticide Management"
+        ]
+      }
+    },
+    {
+      "id": "healthy",
+      "why": "Shortest page - guards off-by-one in section splitting.",
+      "fn": "load_chunks",
+      "input": {
+        "doc": "potato_healthy.md"
+      },
+      "expect": {
+        "chunk_count": 4,
+        "chunk_ids": [
+          "potato_healthy#0",
+          "potato_healthy#1",
+          "potato_healthy#2",
+          "potato_healthy#3"
+        ],
+        "sections": [
+          "What the result means",
+          "Do not spray",
+          "Keep it healthy",
+          "When to submit another photograph"
+        ],
+        "title": "Healthy Potato Crop - Preventive Management",
+        "classes": [
+          "potato_healthy"
+        ],
+        "kind": "healthy",
+        "sources": [
+          "ICAR-Central Potato Research Institute (CPRI), Shimla - potato package of practices"
+        ]
+      }
+    },
+    {
+      "id": "late_blight_by_class",
+      "why": "The core path: a detected class drives retrieval.",
+      "fn": "search",
+      "input": {
+        "query": "late blight treatment",
+        "k": 5,
+        "class_filter": [
+          "potato_late_blight"
+        ]
+      },
+      "expect": {
+        "chunk_ids": [
+          "potato_late_blight#0",
+          "referral_and_ipdm#1",
+          "potato_late_blight#1",
+          "potato_late_blight#3",
+          "potato_late_blight#9"
+        ],
+        "scores": [
+          3.4916,
+          3.1705,
+          3.1275,
+          3.0277,
+          2.7691
+        ]
+      }
+    },
+    {
+      "id": "late_blight_no_filter",
+      "why": "Same query unfiltered - proves the 1.35x boost actually reorders.",
+      "fn": "search",
+      "input": {
+        "query": "late blight treatment",
+        "k": 5,
+        "class_filter": null
+      },
+      "expect": {
+        "chunk_ids": [
+          "potato_late_blight#0",
+          "referral_and_ipdm#1",
+          "potato_early_blight#0",
+          "potato_late_blight#1",
+          "potato_late_blight#3"
+        ],
+        "scores": [
+          2.5864,
+          2.3485,
+          2.3442,
+          2.3167,
+          2.2427
+        ]
+      }
+    },
+    {
+      "id": "early_blight_by_class",
+      "why": "Second disease, to catch a port that hardcodes the first.",
+      "fn": "search",
+      "input": {
+        "query": "early blight concentric rings",
+        "k": 5,
+        "class_filter": [
+          "potato_early_blight"
+        ]
+      },
+      "expect": {
+        "chunk_ids": [
+          "potato_early_blight#1",
+          "potato_early_blight#0",
+          "potato_early_blight#3",
+          "potato_early_blight#7",
+          "potato_early_blight#5"
+        ],
+        "scores": [
+          9.9428,
+          3.9212,
+          3.283,
+          3.1496,
+          2.9793
+        ]
+      }
+    },
+    {
+      "id": "dose_query",
+      "why": "A dose lookup, where the tokenizer decides whether it works at all.",
+      "fn": "search",
+      "input": {
+        "query": "mancozeb dose per litre",
+        "k": 5,
+        "class_filter": null
+      },
+      "expect": {
+        "chunk_ids": [
+          "potato_late_blight#6",
+          "potato_early_blight#4",
+          "potato_late_blight#5",
+          "potato_late_blight#4",
+          "safe_input_usage#2"
+        ],
+        "scores": [
+          11.1916,
+          9.1678,
+          7.9553,
+          4.663,
+          3.6964
+        ]
+      }
+    },
+    {
+      "id": "safety_query",
+      "why": "Safety pages carry no class tag and must stay eligible under a filter.",
+      "fn": "search",
+      "input": {
+        "query": "protective equipment spraying safety",
+        "k": 5,
+        "class_filter": [
+          "potato_late_blight"
+        ]
+      },
+      "expect": {
+        "chunk_ids": [
+          "referral_and_ipdm#0",
+          "safe_input_usage#4",
+          "safe_input_usage#3",
+          "safe_input_usage#2"
+        ],
+        "scores": [
+          6.2401,
+          5.6814,
+          2.9677,
+          2.3376
+        ]
+      }
+    },
+    {
+      "id": "referral_query",
+      "why": "The escalation page, retrieved by intent rather than class.",
+      "fn": "search",
+      "input": {
+        "query": "when to call an extension officer",
+        "k": 3,
+        "class_filter": null
+      },
+      "expect": {
+        "chunk_ids": [
+          "referral_and_ipdm#2",
+          "safe_input_usage#5",
+          "referral_and_ipdm#4"
+        ],
+        "scores": [
+          6.1236,
+          4.7909,
+          3.5319
+        ]
+      }
+    },
+    {
+      "id": "healthy_query",
+      "why": "Healthy is a class too, and its page is mostly preventive advice.",
+      "fn": "search",
+      "input": {
+        "query": "preventive spray healthy crop",
+        "k": 5,
+        "class_filter": [
+          "potato_healthy"
+        ]
+      },
+      "expect": {
+        "chunk_ids": [
+          "potato_healthy#1",
+          "potato_healthy#3",
+          "potato_healthy#0",
+          "potato_healthy#2",
+          "referral_and_ipdm#4"
+        ],
+        "scores": [
+          10.7582,
+          7.8846,
+          6.9214,
+          5.8353,
+          5.3464
+        ]
+      }
+    },
+    {
+      "id": "pest_query",
+      "why": "Pests live on their own page with their own class tags.",
+      "fn": "search",
+      "input": {
+        "query": "tuber moth trap",
+        "k": 5,
+        "class_filter": null
+      },
+      "expect": {
+        "chunk_ids": [
+          "potato_pests#6",
+          "potato_pests#1",
+          "potato_pests#2",
+          "potato_pests#4",
+          "potato_pests#0"
+        ],
+        "scores": [
+          6.4374,
+          6.221,
+          3.7994,
+          3.7355,
+          3.6847
+        ]
+      }
+    },
+    {
+      "id": "unmatched_filter",
+      "why": "A class nothing is tagged with must widen to an unfiltered search.",
+      "fn": "search",
+      "input": {
+        "query": "late blight",
+        "k": 5,
+        "class_filter": [
+          "tomato_leaf_curl"
+        ]
+      },
+      "expect": {
+        "chunk_ids": [],
+        "scores": []
+      }
+    },
+    {
+      "id": "no_hits_at_all",
+      "why": "A query with no lexical overlap returns empty, not an error.",
+      "fn": "search",
+      "input": {
+        "query": "zzzz qqqq xxxx",
+        "k": 5,
+        "class_filter": null
+      },
+      "expect": {
+        "chunk_ids": [],
+        "scores": []
+      }
+    },
+    {
+      "id": "k_is_one",
+      "why": "Top-1 only - pins which chunk actually wins, not just the set.",
+      "fn": "search",
+      "input": {
+        "query": "white downy growth underside leaf",
+        "k": 1,
+        "class_filter": [
+          "potato_late_blight"
+        ]
+      },
+      "expect": {
+        "chunk_ids": [
+          "potato_late_blight#1"
+        ],
+        "scores": [
+          17.3923
+        ]
+      }
+    },
+    {
+      "id": "k_larger_than_corpus",
+      "why": "k beyond the number of scoring chunks must not pad or crash.",
+      "fn": "search",
+      "input": {
+        "query": "potato",
+        "k": 100,
+        "class_filter": null
+      },
+      "expect": {
+        "chunk_ids": [
+          "potato_pests#3",
+          "potato_pests#0",
+          "potato_late_blight#0",
+          "potato_early_blight#6",
+          "potato_late_blight#3",
+          "potato_early_blight#5",
+          "potato_late_blight#10",
+          "potato_late_blight#2",
+          "potato_early_blight#8",
+          "potato_pests#6",
+          "potato_healthy#2",
+          "potato_healthy#1",
+          "potato_healthy#3",
+          "potato_early_blight#0",
+          "potato_early_blight#2",
+          "potato_early_blight#7",
+          "potato_healthy#0",
+          "potato_late_blight#4",
+          "potato_late_blight#9",
+          "potato_late_blight#7",
+          "potato_pests#4",
+          "potato_late_blight#5",
+          "safe_input_usage#1",
+          "potato_early_blight#3",
+          "potato_pests#1",
+          "potato_early_blight#1",
+          "potato_late_blight#6",
+          "potato_pests#2",
+          "potato_late_blight#1",
+          "potato_early_blight#4",
+          "potato_pests#5",
+          "potato_late_blight#8",
+          "safe_input_usage#4",
+          "referral_and_ipdm#1"
+        ],
+        "scores": [
+          0.5076,
+          0.4429,
+          0.4344,
+          0.4309,
+          0.3767,
+          0.3457,
+          0.3354,
+          0.3322,
+          0.3289,
+          0.3258,
+          0.323,
+          0.3227,
+          0.3227,
+          0.3197,
+          0.3197,
+          0.3197,
+          0.3053,
+          0.3026,
+          0.2947,
+          0.2897,
+          0.2873,
+          0.2756,
+          0.2691,
+          0.267,
+          0.2649,
+          0.2512,
+          0.2512,
+          0.2486,
+          0.2476,
+          0.2323,
+          0.2232,
+          0.2082,
+          0.2032,
+          0.1835
+        ]
+      }
+    }
+  ]
+}

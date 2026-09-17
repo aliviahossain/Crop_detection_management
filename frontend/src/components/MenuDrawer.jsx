@@ -22,6 +22,13 @@ export const MENU_GROUPS = [
       { to: '/review', key: 'nav.review' },
     ],
   },
+  // Not a workflow, so it does not belong in either group above: this is about
+  // what is stored on this handset. Farmers reach it to add their crop, and it
+  // is where a stale detector gets updated.
+  {
+    labelKey: 'menu.device',
+    items: [{ to: '/models', key: 'nav.models' }],
+  },
   // Work-in-progress features live in their own group so they read as a preview,
   // not a shipped tool, and stay walled off from the farmer/officer workflows.
   {

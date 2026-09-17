@@ -72,3 +72,8 @@ croprow_disease/models/*.pt
 croprow_disease/demo_clips/
 # Scratch summary written by the conversion step; regenerated, not a source file.
 croprow_disease/data/_conversion_summary.json
+
+# Built crop packs. Large, reproducible from ml/weights + the KB via
+# mobileapp/tools/build_pack.py, and destined for object storage rather
+# than the repo.
+/dist/packs/

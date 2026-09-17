@@ -28,10 +28,20 @@ if (Test-Path $dest) { Remove-Item $dest -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item "$dist\*" $dest -Recurse -Force
 
-# Drop the jsep (WebGPU) ONNX runtime. liveDetector.js sets
-# ort.env.wasm.wasmPaths='/ort/' and requests the plain wasm provider with
-# numThreads=1, so this 26.5 MB binary is bundled by Vite but never fetched.
-# Shipping it would add 26.5 MB to the APK for nothing.
+# Drop any jsep (WebGPU) ONNX runtime that still turns up in the build.
+#
+# This used to be load-bearing and WRONG. The comment here claimed the binary
+# was "bundled by Vite but never fetched" because liveDetector requests the
+# wasm provider with numThreads=1. It is fetched: the default `onnxruntime-web`
+# entry dynamically imports ort-wasm-simd-threaded.jsep.mjs at session
+# creation regardless of the provider you ask for. Deleting it meant every
+# on-device session failed with "no available backend found", and because the
+# local server answered the missing file with index.html, the browser reported
+# a MIME type error instead of a 404.
+#
+# liveDetector now imports `onnxruntime-web/wasm`, which never asks for jsep,
+# so the build no longer emits it and this loop is a belt-and-braces no-op.
+# It stays because a future dependency bump could reintroduce the file.
 $dropped = 0
 Get-ChildItem (Join-Path $dest 'assets') -Filter '*jsep*' -ErrorAction SilentlyContinue | ForEach-Object {
     Write-Host ("  dropping unused {0} ({1:N1} MB)" -f $_.Name, ($_.Length / 1MB)) -ForegroundColor Yellow

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { LANGUAGES, LangContext, useLang, useT } from './lib/i18n.js'
 import { api } from './lib/api.js'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 import MenuDrawer from './components/MenuDrawer.jsx'
 import FaqDialog from './components/FaqDialog.jsx'
 import ChatBot from './components/ChatBot.jsx'
@@ -12,6 +13,7 @@ import RiskPage from './pages/RiskPage.jsx'
 import MapPage from './pages/MapPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import ReviewPage from './pages/ReviewPage.jsx'
+import ModelsPage from './pages/ModelsPage.jsx'
 import CropRowPage from './pages/CropRowPage.jsx'
 import CropHealthPage from './pages/CropHealthPage.jsx'
 
@@ -157,6 +159,7 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('cropguard.lang', lang)
   }, [lang])
+  const location = useLocation()
   const value = useMemo(() => ({ lang, setLang }), [lang])
   const closeMenu = useCallback(() => setMenuOpen(false), [])
   const closeFaq = useCallback(() => setFaqOpen(false), [])
@@ -168,18 +171,23 @@ export default function App() {
         <MenuDrawer open={menuOpen} onClose={closeMenu} />
         <FaqDialog open={faqOpen} onClose={closeFaq} />
         <HealthBanner />
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/scan" element={<ScanPage />} />
-          <Route path="/check" element={<FarmerPage />} />
-          <Route path="/risk" element={<RiskPage />} />
-          <Route path="/map" element={<MapPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/review" element={<ReviewPage />} />
-          <Route path="/croprow" element={<CropRowPage />} />
-          <Route path="/crophealth" element={<CropHealthPage />} />
-          <Route path="*" element={<Navigate to="/check" replace />} />
-        </Routes>
+        {/* Keyed on the path: a crash on one page must not strand the user
+            there, and remounting on navigation clears the error. */}
+        <ErrorBoundary key={location.pathname}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/scan" element={<ScanPage />} />
+            <Route path="/check" element={<FarmerPage />} />
+            <Route path="/risk" element={<RiskPage />} />
+            <Route path="/map" element={<MapPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/review" element={<ReviewPage />} />
+            <Route path="/models" element={<ModelsPage />} />
+            <Route path="/croprow" element={<CropRowPage />} />
+            <Route path="/crophealth" element={<CropHealthPage />} />
+            <Route path="*" element={<Navigate to="/check" replace />} />
+          </Routes>
+        </ErrorBoundary>
         <ChatBot />
       </div>
     </LangContext.Provider>

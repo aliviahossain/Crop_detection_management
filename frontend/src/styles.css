@@ -780,3 +780,26 @@ details pre {
 }
 .chat-input button:hover:not(:disabled) { background: var(--brand-dark); }
 .chat-input button:disabled { opacity: 0.45; cursor: default; }
+
+/* Crop pack download progress. A determinate bar only: the byte counts come
+   from the on-device installer, so there is never a reason to show a fake
+   indeterminate sweep while a 45 MB file lands. */
+.pack-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--line, #e6e9e6);
+  overflow: hidden;
+}
+.pack-bar-fill {
+  height: 100%;
+  background: var(--brand, #2f6f4e);
+  transition: width 200ms linear;
+}
+.pack-row {
+  padding: 10px 0;
+  border-top: 1px solid var(--line, #e6e9e6);
+  gap: 12px;
+}
+.pack-row:first-of-type {
+  border-top: 0;
+}
