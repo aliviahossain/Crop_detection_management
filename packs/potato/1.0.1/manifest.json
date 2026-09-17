@@ -1,0 +1,66 @@
+{
+  "pack_format": 1,
+  "crop": "potato",
+  "version": "1.0.1",
+  "built_at": "2026-09-17T05:02:20+00:00",
+  "min_app_version": "1.0.0",
+  "classes": [
+    "potato_early_blight",
+    "potato_late_blight",
+    "potato_healthy"
+  ],
+  "files": [
+    {
+      "path": "kb/potato_early_blight.md",
+      "bytes": 4049,
+      "sha256": "9c7e2d0aabfa88fb169fb2d234fdb875de755f9e1ed73f821b9f3276567fa5f8"
+    },
+    {
+      "path": "kb/potato_healthy.md",
+      "bytes": 1956,
+      "sha256": "68bebf19a206d0d657403d30dc56588adb1d1f6c504970f85291d6a7250b8a2c"
+    },
+    {
+      "path": "kb/potato_late_blight.md",
+      "bytes": 5110,
+      "sha256": "26fa1cf8313fefceaeb8fca088d283c3369f56df0271724f9b73fcc3485c4171"
+    },
+    {
+      "path": "kb/potato_pests.md",
+      "bytes": 4166,
+      "sha256": "b74f7786f17bb9402e6c20df61fd493c860f67e55334516001032287f3de0351"
+    },
+    {
+      "path": "kb/referral_and_ipdm.md",
+      "bytes": 4296,
+      "sha256": "249380a493cd50795f04e03010549f64dbf731bfca484382be9ad5de68b191b1"
+    },
+    {
+      "path": "kb/safe_input_usage.md",
+      "bytes": 4352,
+      "sha256": "1c6897e4335718579bf5e4173f86c63edeed4e4ce8a19a7f78cdba8b18c5e491"
+    },
+    {
+      "path": "model.onnx",
+      "bytes": 44749195,
+      "sha256": "4c7229084b7b2962b045b9c2d2187a678507770d83751e05e8d9009d2e89b417"
+    },
+    {
+      "path": "strings.json",
+      "bytes": 27962,
+      "sha256": "d84d9a8d8611ddd278d44ce25552bc77edfe662314b0095a2cef5256d595986c"
+    },
+    {
+      "path": "taxonomy.json",
+      "bytes": 1972,
+      "sha256": "554421f60bd4179216d520d2215841ac391b86a39e4b4238deb3bd53b0f8c182"
+    },
+    {
+      "path": "thresholds.json",
+      "bytes": 15474,
+      "sha256": "d2e1466e3d0188c1e1fbd5eaea8ad7beac22c7a050acb757a6d1028ee0b35e1d"
+    }
+  ],
+  "signature": null,
+  "total_bytes": 44818532
+}

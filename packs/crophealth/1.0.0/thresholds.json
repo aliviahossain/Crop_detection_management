@@ -1,0 +1,9 @@
+{
+  "classes": [
+    "healthy",
+    "unhealthy"
+  ],
+  "per_class": {},
+  "default": 0.25,
+  "iou_threshold": 0.45
+}

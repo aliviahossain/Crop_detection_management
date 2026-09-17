@@ -1,0 +1,13 @@
+{
+  "crop": "croprow",
+  "kind": "detector",
+  "title": "Crop row scan",
+  "classes": [
+    {
+      "key": "lettuce",
+      "display": "Lettuce",
+      "kind": "detector"
+    }
+  ],
+  "note": "Single-class crop localisation. Draws boxes; makes no diagnosis."
+}

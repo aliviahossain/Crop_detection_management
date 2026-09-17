@@ -1,0 +1,61 @@
+{
+  "crop": "potato",
+  "classes": [
+    {
+      "key": "potato_early_blight",
+      "display": "Potato - Early Blight",
+      "crop": "potato",
+      "kind": "disease",
+      "pathogen": "Alternaria solani",
+      "severity": "moderate",
+      "kb_doc": "potato_early_blight.md",
+      "names": {
+        "mr": "बटाटा - लवकर येणारा करपा",
+        "hi": "आलू - अगेती झुलसा",
+        "bn": "আলু - আগাম ধসা"
+      }
+    },
+    {
+      "key": "potato_late_blight",
+      "display": "Potato - Late Blight",
+      "crop": "potato",
+      "kind": "disease",
+      "pathogen": "Phytophthora infestans",
+      "severity": "high",
+      "kb_doc": "potato_late_blight.md",
+      "names": {
+        "mr": "बटाटा - उशिरा येणारा करपा",
+        "hi": "आलू - पछेती झुलसा",
+        "bn": "আলু - নাবি ধসা"
+      }
+    },
+    {
+      "key": "potato_healthy",
+      "display": "Potato - Healthy",
+      "crop": "potato",
+      "kind": "healthy",
+      "pathogen": null,
+      "severity": "none",
+      "kb_doc": "potato_healthy.md",
+      "names": {
+        "mr": "बटाटा - निरोगी",
+        "hi": "आलू - स्वस्थ",
+        "bn": "আলু - সুস্থ"
+      }
+    }
+  ],
+  "non_model_threats": {
+    "potato_tuber_moth": {
+      "en": "Potato tuber moth",
+      "mr": "बटाटा पोखरणारी अळी",
+      "hi": "आलू कंद कीट",
+      "bn": "আলুর মথ পোকা"
+    },
+    "aphid_vector": {
+      "en": "Aphid complex (virus vectors)",
+      "mr": "मावा किडी (विषाणू वाहक)",
+      "hi": "माहू कीट (विषाणु वाहक)",
+      "bn": "জাব পোকা (ভাইরাস বাহক)"
+    }
+  }
+}

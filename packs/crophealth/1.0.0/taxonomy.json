@@ -1,0 +1,18 @@
+{
+  "crop": "crophealth",
+  "kind": "detector",
+  "title": "Crop health scan",
+  "classes": [
+    {
+      "key": "healthy",
+      "display": "Healthy",
+      "kind": "detector"
+    },
+    {
+      "key": "unhealthy",
+      "display": "Unhealthy",
+      "kind": "detector"
+    }
+  ],
+  "note": "Two-class healthy/unhealthy plant detection. A coarse triage signal, not a diagnosis: it names no disease and prescribes nothing."
+}

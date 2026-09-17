@@ -1,0 +1,63 @@
+{
+  "pack_format": 1,
+  "generated_at": "2026-09-17T06:28:23+00:00",
+  "crops": [
+    {
+      "crop": "crophealth",
+      "kind": "detector",
+      "title": "Crop health scan",
+      "latest": "1.0.0",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "built_at": "2026-09-17T05:47:44+00:00",
+          "total_bytes": 10605889,
+          "min_app_version": "1.0.0",
+          "classes": [
+            "healthy",
+            "unhealthy"
+          ],
+          "manifest": "crophealth/1.0.0/manifest.json"
+        }
+      ]
+    },
+    {
+      "crop": "croprow",
+      "kind": "detector",
+      "title": "Crop row scan",
+      "latest": "1.0.0",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "built_at": "2026-09-17T05:47:44+00:00",
+          "total_bytes": 10604907,
+          "min_app_version": "1.0.0",
+          "classes": [
+            "lettuce"
+          ],
+          "manifest": "croprow/1.0.0/manifest.json"
+        }
+      ]
+    },
+    {
+      "crop": "potato",
+      "kind": "crop",
+      "title": null,
+      "latest": "1.0.1",
+      "versions": [
+        {
+          "version": "1.0.1",
+          "built_at": "2026-09-17T05:02:20+00:00",
+          "total_bytes": 44818532,
+          "min_app_version": "1.0.0",
+          "classes": [
+            "potato_early_blight",
+            "potato_late_blight",
+            "potato_healthy"
+          ],
+          "manifest": "potato/1.0.1/manifest.json"
+        }
+      ]
+    }
+  ]
+}

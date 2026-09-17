@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CropGuard — install</title>
+<style>
+  :root {
+    --bg: #f4f6f4; --card: #fff; --ink: #14251c; --muted: #5b6b62;
+    --line: #e2e7e3; --brand: #2f6f4e; --warn: #8a6d1f; --warn-bg: #fdf6e3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121614; --card: #1b201d; --ink: #e8efea; --muted: #9db0a5;
+      --line: #2b332e; --brand: #6fbf92; --warn: #e0c070; --warn-bg: #2a2416;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: 24px 16px 64px;
+  }
+  main { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 1.7rem; margin: 0 0 4px; }
+  .lede { color: var(--muted); margin: 0 0 24px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px 20px; margin-bottom: 16px;
+  }
+  h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: .04em;
+       color: var(--muted); margin: 0 0 12px; }
+  a.dl {
+    display: inline-block; background: var(--brand); color: #fff;
+    text-decoration: none; padding: 14px 24px; border-radius: 10px;
+    font-weight: 600; font-size: 1.05rem;
+  }
+  code, .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+                font-size: .85em; word-break: break-all; }
+  ol { padding-left: 20px; margin: 0; }
+  li { margin-bottom: 8px; }
+  .meta { color: var(--muted); font-size: .875rem; margin-top: 10px; }
+  .warn {
+    background: var(--warn-bg); border: 1px solid var(--warn);
+    border-radius: 10px; padding: 14px 18px; margin-bottom: 16px;
+  }
+  .warn strong { color: var(--warn); }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  td { padding: 6px 0; border-top: 1px solid var(--line); }
+  td:last-child { text-align: right; color: var(--muted); }
+  tr:first-child td { border-top: 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>CropGuard</h1>
+  <p class="lede">Potato disease alerts. Runs offline once a crop is installed.</p>
+
+  <div class="card">
+    <a class="dl" href="cropguard.apk">Download APK (54 MB)</a>
+    <p class="meta">
+      Android only. You will need to allow installs from this browser.<br>
+      SHA-256: <span class="mono">e1c3663d6e8714cedc96a1ee0f8effeb101ffa19a822fff2a06a16e67c84cd32</span>
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Needs a connection exactly once</h2>
+    <p style="margin:0">
+      The app ships without crop models, so the first launch downloads the one
+      you pick. After that the whole farmer loop &mdash; forecast, photo,
+      diagnosis, treatment advice &mdash; runs on the phone with the radio off.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>First run</h2>
+    <ol>
+      <li>Install and open the app.</li>
+      <li>Choose a crop. <strong>Potato</strong> is the farmer app; the two
+          scans are lab tools that locate plants and diagnose nothing.</li>
+      <li>Wait for the download to finish, then turn the radio off and try it.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>Available models</h2>
+    <table>
+      <tr><td><strong>Potato</strong> — 3 conditions, full advisory</td><td>45 MB</td></tr>
+      <tr><td><strong>Crop row scan</strong> — lab tool, finds plants</td><td>11 MB</td></tr>
+      <tr><td><strong>Crop health scan</strong> — lab tool, finds plants</td><td>11 MB</td></tr>
+    </table>
+    <p class="meta">
+      Each is verified against a published SHA-256 before it installs; a
+      download that fails the check is discarded, because these carry
+      pesticide dose tables.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>What works with no network</h2>
+    <p style="margin:0">
+      Weather risk forecasting, the scouting alert, photo diagnosis, treatment
+      advice and both lab scanners. What needs a connection: downloading a new
+      crop model, and cross-farm outbreak data from other farmers' devices.
+    </p>
+  </div>
+</main>
+</body>
+</html>

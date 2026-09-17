@@ -1,0 +1,32 @@
+{
+  "pack_format": 1,
+  "kind": "detector",
+  "crop": "crophealth",
+  "title": "Crop health scan",
+  "version": "1.0.0",
+  "built_at": "2026-09-17T05:47:44+00:00",
+  "min_app_version": "1.0.0",
+  "classes": [
+    "healthy",
+    "unhealthy"
+  ],
+  "files": [
+    {
+      "path": "model.onnx",
+      "bytes": 10605323,
+      "sha256": "a6914bacf5e6f31de7153159fea3b3980197695000d0d24af94bbae0c86aa469"
+    },
+    {
+      "path": "taxonomy.json",
+      "bytes": 442,
+      "sha256": "2e7aad75bf430c8739850db6e7dc29c66d8ed523f768b14c9253f00dff8a598f"
+    },
+    {
+      "path": "thresholds.json",
+      "bytes": 124,
+      "sha256": "8c9ae6367c85b20b14a3bb8d956a14fd4f91e8f19b2eecd34ad5749f5b97be0d"
+    }
+  ],
+  "signature": null,
+  "total_bytes": 10605889
+}
