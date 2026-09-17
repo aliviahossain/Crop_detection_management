@@ -4,7 +4,7 @@
   "crop": "crophealth",
   "title": "Crop health scan",
   "version": "1.0.0",
-  "built_at": "2026-09-17T05:47:44+00:00",
+  "built_at": "2026-09-17T06:30:49+00:00",
   "min_app_version": "1.0.0",
   "classes": [
     "healthy",
@@ -18,15 +18,15 @@
     },
     {
       "path": "taxonomy.json",
-      "bytes": 442,
-      "sha256": "2e7aad75bf430c8739850db6e7dc29c66d8ed523f768b14c9253f00dff8a598f"
+      "bytes": 425,
+      "sha256": "0d12019a903282693d194aebe6bfe01b58e44bc692a3359a0b1987ccfde54a1f"
     },
     {
       "path": "thresholds.json",
-      "bytes": 124,
-      "sha256": "8c9ae6367c85b20b14a3bb8d956a14fd4f91e8f19b2eecd34ad5749f5b97be0d"
+      "bytes": 116,
+      "sha256": "4b0f287fce767ac62d52549f8f3d65288175339c93c9e6fef4cdf9edbcad92da"
     }
   ],
   "signature": null,
-  "total_bytes": 10605889
+  "total_bytes": 10605864
 }

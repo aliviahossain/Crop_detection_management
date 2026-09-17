@@ -1,0 +1,4 @@
+# The manifest publishes a SHA-256 of every byte in these files, so git
+# must store and serve them verbatim. Any line-ending normalisation makes a
+# pack fail its own checksum on install.
+* -text

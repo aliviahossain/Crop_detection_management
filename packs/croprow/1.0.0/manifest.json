@@ -4,7 +4,7 @@
   "crop": "croprow",
   "title": "Crop row scan",
   "version": "1.0.0",
-  "built_at": "2026-09-17T05:47:44+00:00",
+  "built_at": "2026-09-17T06:30:49+00:00",
   "min_app_version": "1.0.0",
   "classes": [
     "lettuce"
@@ -17,15 +17,15 @@
     },
     {
       "path": "taxonomy.json",
-      "bytes": 272,
-      "sha256": "41ab8aac8cb3cb94435139676219935a54f05e4cdc781ebbb16b892cba92dabd"
+      "bytes": 260,
+      "sha256": "9c6a27188f4b9409e7228a191e8da710895e2e332c76dfff77f445009dcf2e6e"
     },
     {
       "path": "thresholds.json",
-      "bytes": 106,
-      "sha256": "da1a772b21edcf506a934982cf0e174324f2a9088c099609877a4e723944b434"
+      "bytes": 99,
+      "sha256": "a78fe8d0c279836964e9223b64fe062fa9dfe87a34929648528f717d7c35f1a8"
     }
   ],
   "signature": null,
-  "total_bytes": 10604907
+  "total_bytes": 10604888
 }

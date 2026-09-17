@@ -1,6 +1,6 @@
 {
   "pack_format": 1,
-  "generated_at": "2026-09-17T06:28:23+00:00",
+  "generated_at": "2026-09-17T06:30:49+00:00",
   "crops": [
     {
       "crop": "crophealth",
@@ -10,8 +10,8 @@
       "versions": [
         {
           "version": "1.0.0",
-          "built_at": "2026-09-17T05:47:44+00:00",
-          "total_bytes": 10605889,
+          "built_at": "2026-09-17T06:30:49+00:00",
+          "total_bytes": 10605864,
           "min_app_version": "1.0.0",
           "classes": [
             "healthy",
@@ -29,8 +29,8 @@
       "versions": [
         {
           "version": "1.0.0",
-          "built_at": "2026-09-17T05:47:44+00:00",
-          "total_bytes": 10604907,
+          "built_at": "2026-09-17T06:30:49+00:00",
+          "total_bytes": 10604888,
           "min_app_version": "1.0.0",
           "classes": [
             "lettuce"
@@ -47,8 +47,8 @@
       "versions": [
         {
           "version": "1.0.1",
-          "built_at": "2026-09-17T05:02:20+00:00",
-          "total_bytes": 44818532,
+          "built_at": "2026-09-17T06:30:49+00:00",
+          "total_bytes": 44818247,
           "min_app_version": "1.0.0",
           "classes": [
             "potato_early_blight",

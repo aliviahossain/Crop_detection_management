@@ -2,7 +2,7 @@
   "pack_format": 1,
   "crop": "potato",
   "version": "1.0.1",
-  "built_at": "2026-09-17T05:02:20+00:00",
+  "built_at": "2026-09-17T06:30:49+00:00",
   "min_app_version": "1.0.0",
   "classes": [
     "potato_early_blight",
@@ -47,13 +47,13 @@
     },
     {
       "path": "strings.json",
-      "bytes": 27962,
-      "sha256": "d84d9a8d8611ddd278d44ce25552bc77edfe662314b0095a2cef5256d595986c"
+      "bytes": 27737,
+      "sha256": "59d86310bfdac8d08cb6388b496be0889f5c8b2afd3eee22bfa46cbb80b9b010"
     },
     {
       "path": "taxonomy.json",
-      "bytes": 1972,
-      "sha256": "554421f60bd4179216d520d2215841ac391b86a39e4b4238deb3bd53b0f8c182"
+      "bytes": 1912,
+      "sha256": "10dac75e764703cc502f7399d09a575c2945efb2d06c0178eb38363c97ace0bb"
     },
     {
       "path": "thresholds.json",
@@ -62,5 +62,5 @@
     }
   ],
   "signature": null,
-  "total_bytes": 44818532
+  "total_bytes": 44818247
 }
