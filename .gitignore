@@ -72,3 +72,20 @@ croprow_disease/models/*.pt
 croprow_disease/demo_clips/
 # Scratch summary written by the conversion step; regenerated, not a source file.
 croprow_disease/data/_conversion_summary.json
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.widget_preview/
+mobileapp/app/build/
+*.iml
+.idea/
+
+# Android
+.gradle/
+.kotlin/
+local.properties
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
