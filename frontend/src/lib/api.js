@@ -78,6 +78,16 @@ export const api = {
   sensorSummary: (params = {}) => request(`/sensors/summary?${new URLSearchParams(params)}`),
   postSensor: (payload) => request('/sensors', json(payload)),
 
+  // Crop packs. These exist only on the on-device server the Android app runs;
+  // the web deployment has no such routes and returns 404, which the models
+  // page reads as "not supported here" rather than as an error.
+  packsInstalled: () => request('/packs/installed'),
+  packsCatalog: () => request('/packs/catalog'),
+  packsSource: () => request('/packs/source'),
+  setPacksSource: (payload) => request('/packs/source', json(payload)),
+  packsProgress: () => request('/packs/progress'),
+  installPack: (payload) => request('/packs/install', json(payload)),
+
   // Floating assistant. The Gemini key lives on the backend; we only ever
   // send the message + recent history and get a reply back.
   chat: (payload) => request('/chat', json(payload)),

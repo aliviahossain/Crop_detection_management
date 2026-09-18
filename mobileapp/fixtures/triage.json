@@ -1,0 +1,749 @@
+{
+  "suite": "triage",
+  "source": "backend/app/services/triage.py",
+  "description": "The safety gate between the detector and the advisory.",
+  "constants": {
+    "low_confidence_threshold": 0.55
+  },
+  "cases": [
+    {
+      "id": "model_unavailable_short_circuits",
+      "why": "No model means no diagnosis. This returns immediately and must never reach the other rules.",
+      "input": {
+        "model_available": false,
+        "predicted_class": null,
+        "confidence": null,
+        "risk": null,
+        "detection_count": 1,
+        "failed_treatments": 0,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": true,
+        "urgency": "soon",
+        "self_treatment_allowed": false,
+        "referral_level": "block",
+        "reasons": [
+          {
+            "code": "model_unavailable",
+            "message": "The image detection model is not available on this deployment, so no automated diagnosis was made.",
+            "action": "Send the photograph to your Taluka Agriculture Officer or KVK for a human diagnosis. Do not spray on the basis of this app alone."
+          }
+        ]
+      }
+    },
+    {
+      "id": "model_unavailable_ignores_other_signals",
+      "why": "Even with a severe field report, an absent model still yields exactly one reason.",
+      "input": {
+        "model_available": false,
+        "predicted_class": null,
+        "confidence": null,
+        "risk": null,
+        "detection_count": 1,
+        "failed_treatments": 3,
+        "severity_fraction": 0.8
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": true,
+        "urgency": "soon",
+        "self_treatment_allowed": false,
+        "referral_level": "block",
+        "reasons": [
+          {
+            "code": "model_unavailable",
+            "message": "The image detection model is not available on this deployment, so no automated diagnosis was made.",
+            "action": "Send the photograph to your Taluka Agriculture Officer or KVK for a human diagnosis. Do not spray on the basis of this app alone."
+          }
+        ]
+      }
+    },
+    {
+      "id": "no_detection_null_class",
+      "why": "Model ran, recognised nothing. Escalates to village level rather than guessing.",
+      "input": {
+        "model_available": true,
+        "predicted_class": null,
+        "confidence": null,
+        "risk": null,
+        "detection_count": 0,
+        "failed_treatments": 0,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": true,
+        "urgency": "soon",
+        "self_treatment_allowed": false,
+        "referral_level": "village",
+        "reasons": [
+          {
+            "code": "no_detection",
+            "message": "The model found no symptom it recognises above the confidence threshold. This may mean a healthy crop, a poor photograph, or a problem outside the three potato classes it was trained on.",
+            "action": "Retake the photo in daylight, filling the frame with the affected leaf. If symptoms are visible to you, refer the case to an extension officer."
+          }
+        ]
+      }
+    },
+    {
+      "id": "no_detection_zero_count",
+      "why": "A class survived but no boxes did - detection_count 0 is the authority.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_late_blight",
+        "confidence": 0.91,
+        "risk": null,
+        "detection_count": 0,
+        "failed_treatments": 0,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": true,
+        "urgency": "urgent",
+        "self_treatment_allowed": false,
+        "referral_level": "village",
+        "reasons": [
+          {
+            "code": "no_detection",
+            "message": "The model found no symptom it recognises above the confidence threshold. This may mean a healthy crop, a poor photograph, or a problem outside the three potato classes it was trained on.",
+            "action": "Retake the photo in daylight, filling the frame with the affected leaf. If symptoms are visible to you, refer the case to an extension officer."
+          },
+          {
+            "code": "fast_moving_disease",
+            "message": "Potato - Late Blight can destroy an unprotected crop within 7-10 days once conditions are favourable.",
+            "action": "Begin the recommended management today, and inform neighbouring farmers so they can protect their fields."
+          }
+        ]
+      }
+    },
+    {
+      "id": "low_confidence_just_below_threshold",
+      "why": "Confidence just under 0.55 must block a chemical recommendation.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_late_blight",
+        "confidence": 0.54,
+        "risk": null,
+        "detection_count": 1,
+        "failed_treatments": 0,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": true,
+        "urgency": "soon",
+        "self_treatment_allowed": false,
+        "referral_level": "village",
+        "reasons": [
+          {
+            "code": "low_confidence",
+            "message": "Model confidence is 54%, below the 55% threshold required to recommend a chemical treatment.",
+            "action": "Treat the diagnosis as provisional. Get it confirmed by an extension officer before buying or applying any pesticide."
+          }
+        ]
+      }
+    },
+    {
+      "id": "confidence_exactly_at_threshold",
+      "why": "Exactly 0.55 is NOT low confidence - the rule is '<', so this passes.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_late_blight",
+        "confidence": 0.55,
+        "risk": null,
+        "detection_count": 1,
+        "failed_treatments": 0,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": false,
+        "urgency": "urgent",
+        "self_treatment_allowed": true,
+        "referral_level": null,
+        "reasons": [
+          {
+            "code": "fast_moving_disease",
+            "message": "Potato - Late Blight can destroy an unprotected crop within 7-10 days once conditions are favourable.",
+            "action": "Begin the recommended management today, and inform neighbouring farmers so they can protect their fields."
+          }
+        ]
+      }
+    },
+    {
+      "id": "very_low_confidence",
+      "why": "Far below threshold - low_confidence plus no other escalation.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_late_blight",
+        "confidence": 0.12,
+        "risk": null,
+        "detection_count": 1,
+        "failed_treatments": 0,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": true,
+        "urgency": "soon",
+        "self_treatment_allowed": false,
+        "referral_level": "village",
+        "reasons": [
+          {
+            "code": "low_confidence",
+            "message": "Model confidence is 12%, below the 55% threshold required to recommend a chemical treatment.",
+            "action": "Treat the diagnosis as provisional. Get it confirmed by an extension officer before buying or applying any pesticide."
+          }
+        ]
+      }
+    },
+    {
+      "id": "conflicting_signals_image_vs_weather",
+      "why": "Image says early blight, weather says HIGH late blight risk: the misdiagnosis trap.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_early_blight",
+        "confidence": 0.88,
+        "risk": {
+          "top_threat": "potato_late_blight",
+          "overall_level": "high"
+        },
+        "detection_count": 1,
+        "failed_treatments": 0,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": true,
+        "urgency": "routine",
+        "self_treatment_allowed": true,
+        "referral_level": null,
+        "reasons": [
+          {
+            "code": "conflicting_signals",
+            "message": "The image was classified as Potato - Early Blight, but weather conditions indicate HIGH risk of Potato - Late Blight instead.",
+            "action": "Have an extension officer inspect the field before choosing a chemistry - the wrong product here wastes money and leaves residue for no benefit."
+          }
+        ]
+      }
+    },
+    {
+      "id": "agreeing_signals_no_conflict",
+      "why": "Image and weather name the same threat - no conflict reason may fire.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_late_blight",
+        "confidence": 0.88,
+        "risk": {
+          "top_threat": "potato_late_blight",
+          "overall_level": "high"
+        },
+        "detection_count": 1,
+        "failed_treatments": 0,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": false,
+        "urgency": "urgent",
+        "self_treatment_allowed": true,
+        "referral_level": null,
+        "reasons": [
+          {
+            "code": "fast_moving_disease",
+            "message": "Potato - Late Blight can destroy an unprotected crop within 7-10 days once conditions are favourable.",
+            "action": "Begin the recommended management today, and inform neighbouring farmers so they can protect their fields."
+          }
+        ]
+      }
+    },
+    {
+      "id": "conflict_requires_high_risk",
+      "why": "Disagreement at MEDIUM risk is not enough to escalate.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_early_blight",
+        "confidence": 0.88,
+        "risk": {
+          "top_threat": "potato_late_blight",
+          "overall_level": "medium"
+        },
+        "detection_count": 1,
+        "failed_treatments": 0,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": false,
+        "urgency": "routine",
+        "self_treatment_allowed": true,
+        "referral_level": null,
+        "reasons": [
+          {
+            "code": "clear_case",
+            "message": "Confident diagnosis with no conflicting signals.",
+            "action": "Follow the advisory below and complete the scheduled follow-up."
+          }
+        ]
+      }
+    },
+    {
+      "id": "healthy_crop_high_risk_preventive_window",
+      "why": "Healthy leaf but HIGH forecast risk - the protectant-spray decision, not an escalation.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_healthy",
+        "confidence": 0.95,
+        "risk": {
+          "top_threat": "potato_late_blight",
+          "overall_level": "high"
+        },
+        "detection_count": 1,
+        "failed_treatments": 0,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": false,
+        "urgency": "soon",
+        "self_treatment_allowed": true,
+        "referral_level": null,
+        "reasons": [
+          {
+            "code": "preventive_window",
+            "message": "No symptoms were detected, but the weather risk forecast is HIGH. This is the window where a protectant spray prevents an epidemic instead of chasing it.",
+            "action": "Follow the preventive advisory and scout the field within 48 hours. This is a judgement call worth confirming with your Krishi Sahayak."
+          }
+        ]
+      }
+    },
+    {
+      "id": "healthy_crop_calm_weather",
+      "why": "The do-not-spray case: healthy, no risk, nothing to escalate.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_healthy",
+        "confidence": 0.95,
+        "risk": {
+          "top_threat": "potato_late_blight",
+          "overall_level": "medium"
+        },
+        "detection_count": 1,
+        "failed_treatments": 0,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": false,
+        "urgency": "routine",
+        "self_treatment_allowed": true,
+        "referral_level": null,
+        "reasons": [
+          {
+            "code": "clear_case",
+            "message": "Confident diagnosis with no conflicting signals.",
+            "action": "Follow the advisory below and complete the scheduled follow-up."
+          }
+        ]
+      }
+    },
+    {
+      "id": "healthy_crop_is_not_actionable_for_conflict",
+      "why": "Healthy is not actionable, so the conflicting-signals rule must skip it.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_healthy",
+        "confidence": 0.95,
+        "risk": {
+          "top_threat": "potato_early_blight",
+          "overall_level": "high"
+        },
+        "detection_count": 1,
+        "failed_treatments": 0,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": false,
+        "urgency": "soon",
+        "self_treatment_allowed": true,
+        "referral_level": null,
+        "reasons": [
+          {
+            "code": "preventive_window",
+            "message": "No symptoms were detected, but the weather risk forecast is HIGH. This is the window where a protectant spray prevents an epidemic instead of chasing it.",
+            "action": "Follow the preventive advisory and scout the field within 48 hours. This is a judgement call worth confirming with your Krishi Sahayak."
+          }
+        ]
+      }
+    },
+    {
+      "id": "one_failed_treatment_not_yet_resistance",
+      "why": "A single failure is not a pattern - must not escalate to laboratory.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_late_blight",
+        "confidence": 0.91,
+        "risk": null,
+        "detection_count": 1,
+        "failed_treatments": 1,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": false,
+        "urgency": "urgent",
+        "self_treatment_allowed": true,
+        "referral_level": null,
+        "reasons": [
+          {
+            "code": "fast_moving_disease",
+            "message": "Potato - Late Blight can destroy an unprotected crop within 7-10 days once conditions are favourable.",
+            "action": "Begin the recommended management today, and inform neighbouring farmers so they can protect their fields."
+          }
+        ]
+      }
+    },
+    {
+      "id": "two_failed_treatments_resistance",
+      "why": "Two failures means laboratory referral, not a heavier dose.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_late_blight",
+        "confidence": 0.91,
+        "risk": null,
+        "detection_count": 1,
+        "failed_treatments": 2,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": true,
+        "urgency": "urgent",
+        "self_treatment_allowed": false,
+        "referral_level": "laboratory",
+        "reasons": [
+          {
+            "code": "treatment_failure",
+            "message": "2 follow-ups recorded the problem as unchanged or worsened after treatment.",
+            "action": "Do not repeat the same spray. This pattern suggests fungicide resistance or a misdiagnosis and needs laboratory confirmation through your KVK."
+          },
+          {
+            "code": "fast_moving_disease",
+            "message": "Potato - Late Blight can destroy an unprotected crop within 7-10 days once conditions are favourable.",
+            "action": "Begin the recommended management today, and inform neighbouring farmers so they can protect their fields."
+          }
+        ]
+      }
+    },
+    {
+      "id": "severity_just_below_field_scale",
+      "why": "24% affected stays an individual problem.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_late_blight",
+        "confidence": 0.91,
+        "risk": null,
+        "detection_count": 1,
+        "failed_treatments": 0,
+        "severity_fraction": 0.24
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": false,
+        "urgency": "urgent",
+        "self_treatment_allowed": true,
+        "referral_level": null,
+        "reasons": [
+          {
+            "code": "fast_moving_disease",
+            "message": "Potato - Late Blight can destroy an unprotected crop within 7-10 days once conditions are favourable.",
+            "action": "Begin the recommended management today, and inform neighbouring farmers so they can protect their fields."
+          }
+        ]
+      }
+    },
+    {
+      "id": "severity_exactly_at_field_scale",
+      "why": "25% exactly is an outbreak - the rule is '>='.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_late_blight",
+        "confidence": 0.91,
+        "risk": null,
+        "detection_count": 1,
+        "failed_treatments": 0,
+        "severity_fraction": 0.25
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": true,
+        "urgency": "urgent",
+        "self_treatment_allowed": true,
+        "referral_level": "district",
+        "reasons": [
+          {
+            "code": "high_severity",
+            "message": "About 25% of the field is reported affected.",
+            "action": "Report to the Taluka Agriculture Officer today. At this scale a coordinated response is needed, and neighbouring fields should be surveyed."
+          },
+          {
+            "code": "fast_moving_disease",
+            "message": "Potato - Late Blight can destroy an unprotected crop within 7-10 days once conditions are favourable.",
+            "action": "Begin the recommended management today, and inform neighbouring farmers so they can protect their fields."
+          }
+        ]
+      }
+    },
+    {
+      "id": "severity_majority_of_field",
+      "why": "Most of the field affected - district referral, urgent.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_late_blight",
+        "confidence": 0.91,
+        "risk": null,
+        "detection_count": 1,
+        "failed_treatments": 0,
+        "severity_fraction": 0.7
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": true,
+        "urgency": "urgent",
+        "self_treatment_allowed": true,
+        "referral_level": "district",
+        "reasons": [
+          {
+            "code": "high_severity",
+            "message": "About 70% of the field is reported affected.",
+            "action": "Report to the Taluka Agriculture Officer today. At this scale a coordinated response is needed, and neighbouring fields should be surveyed."
+          },
+          {
+            "code": "fast_moving_disease",
+            "message": "Potato - Late Blight can destroy an unprotected crop within 7-10 days once conditions are favourable.",
+            "action": "Begin the recommended management today, and inform neighbouring farmers so they can protect their fields."
+          }
+        ]
+      }
+    },
+    {
+      "id": "confident_high_severity_disease",
+      "why": "Late blight is high-severity: urgent even when self-treatment stays allowed.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_late_blight",
+        "confidence": 0.93,
+        "risk": null,
+        "detection_count": 1,
+        "failed_treatments": 0,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": false,
+        "urgency": "urgent",
+        "self_treatment_allowed": true,
+        "referral_level": null,
+        "reasons": [
+          {
+            "code": "fast_moving_disease",
+            "message": "Potato - Late Blight can destroy an unprotected crop within 7-10 days once conditions are favourable.",
+            "action": "Begin the recommended management today, and inform neighbouring farmers so they can protect their fields."
+          }
+        ]
+      }
+    },
+    {
+      "id": "confident_moderate_severity_disease",
+      "why": "Early blight is moderate - no fast-moving-disease reason.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_early_blight",
+        "confidence": 0.93,
+        "risk": null,
+        "detection_count": 1,
+        "failed_treatments": 0,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": false,
+        "urgency": "routine",
+        "self_treatment_allowed": true,
+        "referral_level": null,
+        "reasons": [
+          {
+            "code": "clear_case",
+            "message": "Confident diagnosis with no conflicting signals.",
+            "action": "Follow the advisory below and complete the scheduled follow-up."
+          }
+        ]
+      }
+    },
+    {
+      "id": "clear_case_no_reasons_fired",
+      "why": "Nothing wrong: the fallback clear_case reason must be present, never an empty list.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_early_blight",
+        "confidence": 0.87,
+        "risk": {
+          "top_threat": "potato_late_blight",
+          "overall_level": "medium"
+        },
+        "detection_count": 1,
+        "failed_treatments": 0,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": false,
+        "urgency": "routine",
+        "self_treatment_allowed": true,
+        "referral_level": null,
+        "reasons": [
+          {
+            "code": "clear_case",
+            "message": "Confident diagnosis with no conflicting signals.",
+            "action": "Follow the advisory below and complete the scheduled follow-up."
+          }
+        ]
+      }
+    },
+    {
+      "id": "compound_low_confidence_and_failures",
+      "why": "Several rules fire together - reason order and the strongest referral must both hold.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_late_blight",
+        "confidence": 0.3,
+        "risk": null,
+        "detection_count": 1,
+        "failed_treatments": 2,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": true,
+        "urgency": "urgent",
+        "self_treatment_allowed": false,
+        "referral_level": "laboratory",
+        "reasons": [
+          {
+            "code": "low_confidence",
+            "message": "Model confidence is 30%, below the 55% threshold required to recommend a chemical treatment.",
+            "action": "Treat the diagnosis as provisional. Get it confirmed by an extension officer before buying or applying any pesticide."
+          },
+          {
+            "code": "treatment_failure",
+            "message": "2 follow-ups recorded the problem as unchanged or worsened after treatment.",
+            "action": "Do not repeat the same spray. This pattern suggests fungicide resistance or a misdiagnosis and needs laboratory confirmation through your KVK."
+          }
+        ]
+      }
+    },
+    {
+      "id": "compound_everything_at_once",
+      "why": "Worst case: weak detection, conflict, repeated failure and field-scale spread.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_early_blight",
+        "confidence": 0.2,
+        "risk": {
+          "top_threat": "potato_late_blight",
+          "overall_level": "high"
+        },
+        "detection_count": 1,
+        "failed_treatments": 3,
+        "severity_fraction": 0.6
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": true,
+        "urgency": "urgent",
+        "self_treatment_allowed": false,
+        "referral_level": "district",
+        "reasons": [
+          {
+            "code": "low_confidence",
+            "message": "Model confidence is 20%, below the 55% threshold required to recommend a chemical treatment.",
+            "action": "Treat the diagnosis as provisional. Get it confirmed by an extension officer before buying or applying any pesticide."
+          },
+          {
+            "code": "conflicting_signals",
+            "message": "The image was classified as Potato - Early Blight, but weather conditions indicate HIGH risk of Potato - Late Blight instead.",
+            "action": "Have an extension officer inspect the field before choosing a chemistry - the wrong product here wastes money and leaves residue for no benefit."
+          },
+          {
+            "code": "treatment_failure",
+            "message": "3 follow-ups recorded the problem as unchanged or worsened after treatment.",
+            "action": "Do not repeat the same spray. This pattern suggests fungicide resistance or a misdiagnosis and needs laboratory confirmation through your KVK."
+          },
+          {
+            "code": "high_severity",
+            "message": "About 60% of the field is reported affected.",
+            "action": "Report to the Taluka Agriculture Officer today. At this scale a coordinated response is needed, and neighbouring fields should be surveyed."
+          }
+        ]
+      }
+    },
+    {
+      "id": "null_confidence_with_detection",
+      "why": "A detection with no confidence value must not crash the threshold comparison.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "potato_late_blight",
+        "confidence": null,
+        "risk": null,
+        "detection_count": 1,
+        "failed_treatments": 0,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": false,
+        "urgency": "routine",
+        "self_treatment_allowed": true,
+        "referral_level": null,
+        "reasons": [
+          {
+            "code": "clear_case",
+            "message": "Confident diagnosis with no conflicting signals.",
+            "action": "Follow the advisory below and complete the scheduled follow-up."
+          }
+        ]
+      }
+    },
+    {
+      "id": "unknown_class_not_in_taxonomy",
+      "why": "A label the taxonomy does not know must degrade safely, not raise.",
+      "input": {
+        "model_available": true,
+        "predicted_class": "tomato_leaf_mould",
+        "confidence": 0.9,
+        "risk": null,
+        "detection_count": 1,
+        "failed_treatments": 0,
+        "severity_fraction": null
+      },
+      "fn": "evaluate",
+      "expect": {
+        "escalate": false,
+        "urgency": "routine",
+        "self_treatment_allowed": true,
+        "referral_level": null,
+        "reasons": [
+          {
+            "code": "clear_case",
+            "message": "Confident diagnosis with no conflicting signals.",
+            "action": "Follow the advisory below and complete the scheduled follow-up."
+          }
+        ]
+      }
+    }
+  ]
+}

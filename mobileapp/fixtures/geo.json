@@ -1,0 +1,267 @@
+{
+  "suite": "geo",
+  "source": "backend/app/services/geo.py",
+  "description": "Grid-cell bucketing and great-circle distance.",
+  "cases": [
+    {
+      "id": "pune_default_cell",
+      "why": "A real Maharashtra coordinate at the default 0.05 deg grid.",
+      "fn": "geo_cell",
+      "input": {
+        "lat": 18.5204,
+        "lon": 73.8567,
+        "size_deg": 0.05
+      },
+      "expect": {
+        "cell": "0.05:370:1477",
+        "center_lat": 18.525,
+        "center_lon": 73.875
+      }
+    },
+    {
+      "id": "nashik_default_cell",
+      "why": "Second district, to prove cells differ where they should.",
+      "fn": "geo_cell",
+      "input": {
+        "lat": 19.9975,
+        "lon": 73.7898,
+        "size_deg": 0.05
+      },
+      "expect": {
+        "cell": "0.05:399:1475",
+        "center_lat": 19.975,
+        "center_lon": 73.775
+      }
+    },
+    {
+      "id": "exact_grid_boundary",
+      "why": "Lat lands exactly on a cell edge - floor must not round up.",
+      "fn": "geo_cell",
+      "input": {
+        "lat": 18.5,
+        "lon": 73.85,
+        "size_deg": 0.05
+      },
+      "expect": {
+        "cell": "0.05:370:1476",
+        "center_lat": 18.525,
+        "center_lon": 73.825
+      }
+    },
+    {
+      "id": "negative_lat_southern",
+      "why": "Negative latitude: floor(-1.02/0.05) is -21, truncation gives -20.",
+      "fn": "geo_cell",
+      "input": {
+        "lat": -1.02,
+        "lon": 36.82,
+        "size_deg": 0.05
+      },
+      "expect": {
+        "cell": "0.05:-21:736",
+        "center_lat": -1.025,
+        "center_lon": 36.825
+      }
+    },
+    {
+      "id": "negative_lon_western",
+      "why": "Negative longitude, same truncation trap on the other axis.",
+      "fn": "geo_cell",
+      "input": {
+        "lat": 40.7128,
+        "lon": -74.006,
+        "size_deg": 0.05
+      },
+      "expect": {
+        "cell": "0.05:814:-1481",
+        "center_lat": 40.725,
+        "center_lon": -74.025
+      }
+    },
+    {
+      "id": "both_negative",
+      "why": "Both axes negative - the case a truncating port gets wrong twice.",
+      "fn": "geo_cell",
+      "input": {
+        "lat": -33.8688,
+        "lon": -70.6693,
+        "size_deg": 0.05
+      },
+      "expect": {
+        "cell": "0.05:-678:-1414",
+        "center_lat": -33.875,
+        "center_lon": -70.675
+      }
+    },
+    {
+      "id": "near_zero_positive",
+      "why": "Just above the equator/meridian.",
+      "fn": "geo_cell",
+      "input": {
+        "lat": 0.01,
+        "lon": 0.01,
+        "size_deg": 0.05
+      },
+      "expect": {
+        "cell": "0.05:0:0",
+        "center_lat": 0.025,
+        "center_lon": 0.025
+      }
+    },
+    {
+      "id": "near_zero_negative",
+      "why": "Just below - must land in a different cell from near_zero_positive.",
+      "fn": "geo_cell",
+      "input": {
+        "lat": -0.01,
+        "lon": -0.01,
+        "size_deg": 0.05
+      },
+      "expect": {
+        "cell": "0.05:-1:-1",
+        "center_lat": -0.025,
+        "center_lon": -0.025
+      }
+    },
+    {
+      "id": "coarse_grid",
+      "why": "Non-default cell size, to pin the size prefix in the cell id.",
+      "fn": "geo_cell",
+      "input": {
+        "lat": 18.5204,
+        "lon": 73.8567,
+        "size_deg": 0.25
+      },
+      "expect": {
+        "cell": "0.25:74:295",
+        "center_lat": 18.625,
+        "center_lon": 73.875
+      }
+    },
+    {
+      "id": "fine_grid",
+      "why": "Fine grid - checks the '%g' formatting of the size prefix.",
+      "fn": "geo_cell",
+      "input": {
+        "lat": 18.5204,
+        "lon": 73.8567,
+        "size_deg": 0.01
+      },
+      "expect": {
+        "cell": "0.01:1852:7385",
+        "center_lat": 18.525,
+        "center_lon": 73.855
+      }
+    },
+    {
+      "id": "null_lat",
+      "why": "A case with no coordinates must yield no cell, not a crash.",
+      "fn": "geo_cell",
+      "input": {
+        "lat": null,
+        "lon": 73.8567,
+        "size_deg": 0.05
+      },
+      "expect": {
+        "cell": null
+      }
+    },
+    {
+      "id": "null_lon",
+      "why": "Same on the other axis.",
+      "fn": "geo_cell",
+      "input": {
+        "lat": 18.5204,
+        "lon": null,
+        "size_deg": 0.05
+      },
+      "expect": {
+        "cell": null
+      }
+    },
+    {
+      "id": "zero_distance",
+      "why": "Identical points must be exactly 0, not a float artefact.",
+      "fn": "haversine_km",
+      "input": {
+        "lat1": 18.5204,
+        "lon1": 73.8567,
+        "lat2": 18.5204,
+        "lon2": 73.8567
+      },
+      "expect": {
+        "km": 0.0
+      }
+    },
+    {
+      "id": "pune_to_nashik",
+      "why": "~165 km - the scale the 15 km neighbour radius is judged against.",
+      "fn": "haversine_km",
+      "input": {
+        "lat1": 18.5204,
+        "lon1": 73.8567,
+        "lat2": 19.9975,
+        "lon2": 73.7898
+      },
+      "expect": {
+        "km": 164.396079
+      }
+    },
+    {
+      "id": "one_cell_apart",
+      "why": "Roughly one grid cell - the resolution hotspots work at.",
+      "fn": "haversine_km",
+      "input": {
+        "lat1": 18.5204,
+        "lon1": 73.8567,
+        "lat2": 18.5704,
+        "lon2": 73.8567
+      },
+      "expect": {
+        "km": 5.559746
+      }
+    },
+    {
+      "id": "short_hop_1km",
+      "why": "Sub-cell distance, where the distance-decayed neighbour weight lives.",
+      "fn": "haversine_km",
+      "input": {
+        "lat1": 18.5204,
+        "lon1": 73.8567,
+        "lat2": 18.5294,
+        "lon2": 73.8567
+      },
+      "expect": {
+        "km": 1.000754
+      }
+    },
+    {
+      "id": "antipodal_ish",
+      "why": "Half the planet - guards the asin/sqrt domain at the extreme.",
+      "fn": "haversine_km",
+      "input": {
+        "lat1": 0.0,
+        "lon1": 0.0,
+        "lat2": 0.0,
+        "lon2": 179.9
+      },
+      "expect": {
+        "km": 20003.967303
+      }
+    },
+    {
+      "id": "across_equator",
+      "why": "Sign change on latitude.",
+      "fn": "haversine_km",
+      "input": {
+        "lat1": 1.0,
+        "lon1": 36.0,
+        "lat2": -1.0,
+        "lon2": 36.0
+      },
+      "expect": {
+        "km": 222.389853
+      }
+    }
+  ]
+}

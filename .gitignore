@@ -89,3 +89,8 @@ local.properties
 **/android/app/debug
 **/android/app/profile
 **/android/app/release
+
+# Built crop packs. Large, reproducible from ml/weights + the KB via
+# mobileapp/tools/build_pack.py, and destined for object storage rather
+# than the repo.
+/dist/packs/
