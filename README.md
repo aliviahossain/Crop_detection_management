@@ -306,7 +306,9 @@ backfill that the response reports explicitly.
 
 ## 7. Architecture
 
-This is the **web deployment**. The Android app answers the same `/api/...` calls from an
+![CropGuard architecture overview: farmers and officers, React frontend, FastAPI backend, safety triage and domain services, weather + RAG advisories, CropRow labs, database](docs/images/architecture_overview.jpg)
+
+The detailed view below is the **web deployment**. The Android app answers the same `/api/...` calls from an
 in-process Dart server instead, and never calls this backend; its only network edge is a
 one-time crop-pack download from a static host. [`ARCHITECTURE.md`](ARCHITECTURE.md) draws
 both deployments in one diagram.
