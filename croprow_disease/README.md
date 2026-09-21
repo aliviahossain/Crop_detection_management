@@ -143,9 +143,16 @@ pytorch.org). A GPU is strongly recommended for training.
 | 07 | `07_speed` | ready | ONNX + TensorRT FP16 export; benchmark imgsz 640/512/416 |
 | 08 | `08_package_dataset` | ready | build a portable, drop-in 2-class YOLO bundle for a trainer |
 
-01 is already executed. The rest ship **unrun** — whoever trains runs them; they
-stop with a clear message if weights or frames are missing rather than
+01 is already executed. The rest are committed **unrun** — whoever trains runs
+them; they stop with a clear message if weights or frames are missing rather than
 fabricating a fallback.
+
+**Current weights.** A YOLO11n checkpoint was trained on Kaggle on 2026-09-11
+(`models/best.pt` + `models/best.onnx`, classes `Healthy` / `Unhealthy`). The
+files are kept out of git; the ONNX is what the web app serves at `/crophealth`
+and what the Android app downloads as the `crophealth` detector pack. No row has
+been logged to [`RESULTS.md`](RESULTS.md) for it yet, so there is no metric to
+quote, and the caveat in *The colour rule* above applies.
 
 ### Per-plant rollup (06)
 

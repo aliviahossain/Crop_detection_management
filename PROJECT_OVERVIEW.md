@@ -29,11 +29,12 @@ Government of Maharashtra · Maharashtra State Innovation Society (Dept. of Skil
 
 ## 2. Solution
 
-CropGuard Maharashtra is a proactive crop-health platform for farmers and agricultural officers, currently focused on potatoes. It delivers the full loop the problem statement asks for — detect, forecast, advise, verify, and follow up — with every required capability implemented and traceable to code (see [`docs/PS_TRACEABILITY.md`](PS_TRACEABILITY.md)).
+CropGuard Maharashtra is a proactive crop-health platform for farmers and agricultural officers, currently focused on potatoes. It delivers the full loop the problem statement asks for — detect, forecast, advise, verify, and follow up — with every required capability implemented and traceable to code (see [`docs/PS_TRACEABILITY.md`](docs/PS_TRACEABILITY.md)).
 
 **For farmers**
 
 - **Proactive daily alert ("Today" home screen)** — the app opens on a single traffic light that answers *"should I walk my field today?"* before the farmer scans anything. It fuses the weather forecast with **cross-farm outbreak propagation** (a confirmed blight upwind raises your risk before you have detected anything yourself), tells you the **most common disease in your area**, and — when risk is high — says to **photograph your plants this morning**. A demo/live switch and a location picker let it be shown from any device.
+- **Offline Android app** — the whole farmer loop (forecast → photo or live scan → diagnosis → triage → treatment advice → follow-up) runs on the phone with the radio off. It needs a connection exactly once, to download a crop pack. APK: [install page](https://aliviahossain.github.io/Crop_detection_management/); details in [`mobileapp/mobileapp.md`](mobileapp/mobileapp.md).
 - **On-device camera scanning** for instant disease detection — runs live, in-browser, with no per-frame server call.
 - **Photo upload** as an alternative to live scanning, routed through the same safety pipeline.
 - **Weather-driven forecasting** that predicts disease risk *before* symptoms appear.
@@ -50,14 +51,14 @@ CropGuard Maharashtra is a proactive crop-health platform for farmers and agricu
 
 **In the lab (beta) — in development**
 
-- **Crop row scan** — a *second, separate* detector, reached from the menu's **In the lab · beta** group. It answers a different question from the rest of the app: *where are the crop plants* for a cultivator-mounted camera, not *what disease is this*. It is a single-class crop (lettuce) **localizer**, kept fully walled off from the potato disease pipeline (its own [`croprow/`](../croprow/) model, its own `/croprow` endpoints, no case and no database write). It takes a **live camera or an uploaded video clip**, draws boxes as the footage plays, and reports a **unique plant count** — each plant is tracked frame-to-frame and counted once, so the same plant is never double-counted (a plant that leaves and re-enters is counted again, which the UI states plainly). Detection runs on-device via ONNX when the model is exported, with a server fallback and an honest "model not installed" message otherwise.
-- **Crop health scan** — the follow-up question on the same footage, in the same **In the lab · beta** group: *is this plant healthy*. A **two-class** (`healthy` / `unhealthy`) detector trained in [`croprow_disease/`](../croprow_disease/), on its own `/crophealth` endpoints, equally walled off from the potato pipeline (no case, no advisory, no database write). Live camera or uploaded clip, boxes coloured green and red **and labelled in words** (red/green alone is the one pair a colour-blind user cannot separate), with a running **healthy share**: each plant is tracked frame-to-frame, counted once, and reported under whichever label it was given most often, so one blurred frame does not flip the readout. The honesty caveat is carried in the UI itself: the training labels came from a leaf-colour rule over real annotation polygons ([`croprow_disease/health.py`](../croprow_disease/health.py)), not from an agronomist, so this is **vigour triage, not a diagnosis**.
+- **Crop row scan** — a *second, separate* detector, reached from the menu's **In the lab · beta** group. It answers a different question from the rest of the app: *where are the crop plants* for a cultivator-mounted camera, not *what disease is this*. It is a single-class crop (lettuce) **localizer**, kept fully walled off from the potato disease pipeline (its own [`croprow/`](croprow/) model, its own `/croprow` endpoints, no case and no database write). It takes a **live camera or an uploaded video clip**, draws boxes as the footage plays, and reports a **unique plant count** — each plant is tracked frame-to-frame and counted once, so the same plant is never double-counted (a plant that leaves and re-enters is counted again, which the UI states plainly). Detection runs on-device via ONNX when the model is exported, with a server fallback and an honest "model not installed" message otherwise.
+- **Crop health scan** — the follow-up question on the same footage, in the same **In the lab · beta** group: *is this plant healthy*. A **two-class** (`healthy` / `unhealthy`) detector trained in [`croprow_disease/`](croprow_disease/), on its own `/crophealth` endpoints, equally walled off from the potato pipeline (no case, no advisory, no database write). Live camera or uploaded clip, boxes coloured green and red **and labelled in words** (red/green alone is the one pair a colour-blind user cannot separate), with a running **healthy share**: each plant is tracked frame-to-frame, counted once, and reported under whichever label it was given most often, so one blurred frame does not flip the readout. The honesty caveat is carried in the UI itself: the training labels came from a leaf-colour rule over real annotation polygons ([`croprow_disease/health.py`](croprow_disease/health.py)), not from an agronomist, so this is **vigour triage, not a diagnosis**.
 
 **System-wide principles**
 
 - **Safety first:** chemical doses are parsed from human-reviewed knowledge-base tables, never generated by an AI.
 - **Honest by default:** the system reports its own degraded components and separates real faults from deliberate design limits.
-- **Offline-ready:** live scanning and multilingual advisories work with no network and no paid APIs.
+- **Offline-ready:** live scanning and multilingual advisories work with no network and no paid APIs; on the Android app, so does everything else in the farmer loop.
 
 ---
 
@@ -81,6 +82,13 @@ Technologies grouped by domain.
 - **ONNX Runtime** — CPU serving on the backend; **onnxruntime-web** for the browser mirror
 - **Ultralytics + PyTorch** — training only (on cloud GPU, never on the dev laptop)
 - **YOLO11n (CropRow lab, in development)** — a separate single-class crop-row localizer with on-device ONNX inference and an IoU-based plant tracker for unique counting; ByteTrack in the training notebooks
+- **YOLO11n (CropHealth lab, in development)** — a two-class healthy / unhealthy plant detector over the same footage
+
+### Mobile (Android)
+- **Flutter** — app shell: WebView host, camera permission, file-chooser bridge, first-launch crop picker
+- **Android WebView** — runs the same React bundle as the web app, loaded from a loopback origin
+- **Dart port of the backend** — risk models, triage, BM25 advisory and pack store served by an in-process `dart:io` HTTP server; held to the Python services by 108 golden test vectors
+- **Crop packs** — model, thresholds, taxonomy, strings and KB pages, SHA-256 verified, downloaded once from a static host (currently GitHub Pages)
 
 ### AI & ML — Risk Forecasting
 - **Rule-based agronomic models** — Smith Period, Beaumont Period, TOMCAST, and degree-day accumulation
@@ -96,8 +104,9 @@ Technologies grouped by domain.
 - **Message catalog** — 49 messages × 4 languages (English, Marathi, Hindi, Bengali), zero-cost, no API key
 
 ### Testing & Fixtures
-- **pytest** — 153 backend tests (no network, no trained model required)
-- **Vitest** — 54 frontend tests, including a unique-plant-tracker suite and a real onnxruntime-web model run
+- **pytest** — 172 backend tests (no network, no trained model required)
+- **Vitest** — 66 frontend tests, including a unique-plant-tracker suite, the in-page photo inference seam, and a real onnxruntime-web model run
+- **flutter test** — 163 mobile tests, including the golden-vector suites, pack install/refusal against a real HTTP server, and the offline API contract
 - To verify onnxruntime-web loads and runs models accurately without storing heavy 12 MB checkpoints, the system uses a **2 KB synthetic YOLOv8 test fixture** (`yolo3class.onnx`). Generate it by running `pip install -r backend/requirements-dev.txt` (for onnx), then:
 
   ```bash
@@ -105,7 +114,7 @@ Technologies grouped by domain.
   import sys; sys.path.insert(0, 'backend/tests')
   from test_onnx_integration import build_yolo_like_onnx
   from pathlib import Path
-  build_yolo_like_onnx(Path('frontend/src/lib/_tests/fixtures/yolo3class.onnx'),
+  build_yolo_like_onnx(Path('frontend/src/lib/__tests__/fixtures/yolo3class.onnx'),
                        [(320.0, 320.0, 200.0, 100.0, 1, 0.88)])
   "
   ```
@@ -166,7 +175,7 @@ Technologies grouped by domain.
 | Multilingual Advisory | `docs/screenshots/marathi.png` | The same advisory rendered in Marathi/Hindi/Bengali |
 
 <!-- Once added, replace the table rows above with embeds, e.g.:
-![Live Scan](screenshots/live-scan.png)
+![Live Scan](docs/screenshots/live-scan.png)
 -->
 
 ---
@@ -206,15 +215,15 @@ Lab-only validation is retained at **mAP50 0.995** — confirming the fine-tune 
 
 **Base run — training curves and confusion matrix (LAB metrics):**
 
-![Base training curves](training_plots/results.png)
+![Base training curves](docs/training_plots/results.png)
 
-![Base confusion matrix](training_plots/confusion_matrix_normalized.png)
+![Base confusion matrix](docs/training_plots/confusion_matrix_normalized.png)
 
 **Fine-tune run — training curves and confusion matrix (lab + field):**
 
-![Fine-tune training curves](training_plots/finetune_results.png)
+![Fine-tune training curves](docs/training_plots/finetune_results.png)
 
-![Fine-tune confusion matrix](training_plots/finetune_confusion_matrix_normalized.png)
+![Fine-tune confusion matrix](docs/training_plots/finetune_confusion_matrix_normalized.png)
 
 ---
 
@@ -241,10 +250,10 @@ Lab-only validation is retained at **mAP50 0.995** — confirming the fine-tune 
 
 **Platform and reach**
 
-- **Native / PWA packaging** for true offline install on low-end Android phones, with model updates over the air.
+- **Finish the Android app.** It already installs, runs offline, and takes model updates over the air as crop packs. Still to build: a local case database with an outbox, a sync worker so devices contribute to cross-farm outbreak pressure, real weather prefetch, signed packs, and a release signing key.
 - **Role-based authentication** before officer endpoints and the review queue are exposed in a real deployment.
 - **Hardware trap integration.** The sensor ingestion endpoint already accepts a simple schema; wire it to real IoT pest traps in place of the current mocked/simulated feed.
-- **Horizontal scaling.** Migrate SQLite → PostgreSQL, move inference behind a worker pool, and shard the case table by district for state-wide rollout.
+- **Horizontal scaling.** PostgreSQL is already supported (`DATABASE_URL=postgresql://…`); next, move inference behind a worker pool and shard the case table by district for state-wide rollout.
 - **Automated retraining pipeline** with guardrails (batch-size and district-skew warnings already exist) once field-confirmation volume justifies it.
 
 ---
@@ -259,6 +268,7 @@ Stating these is part of the design, not an omission.
 - All chemical doses in the knowledge base carry `review_status: needs_local_validation` and **require formal validation by local agricultural extension offices** (against the CIB&RC product label and the local KVK) before real-world deployment.
 - **No authentication** in this build — officer endpoints are open; a real deployment needs role-based access first.
 - **Weather history is cached, not backfilled** — free-tier OpenWeatherMap has no history API, so the Smith Period looks back over the system's own accumulating cache and reports how much of the window is synthetic.
+- **The Android app does not persist or sync yet** — nothing a farmer records is saved or uploaded, its weather is the deterministic synthetic feed, and officer screens on the phone show demo data (or nothing, with *Live only*). Packs are SHA-256 verified but not signed, and the APK is signed with a debug key.
 
 ---
 
@@ -267,7 +277,8 @@ Stating these is part of the design, not an omission.
 - Built to solve the Government of Maharashtra's Smart India Hackathon **Problem Statement 26131**.
 - Leverages the **PlantVillage** and **PlantDoc** image datasets.
 - Relies on proven agronomic formulas — the **Smith Period**, **Beaumont Period**, **TOMCAST**, and **degree-day** models.
-- Full capability-to-code mapping: [`docs/PS_TRACEABILITY.md`](PS_TRACEABILITY.md) · architecture rationale: [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) · ML pipeline: [`ml/README.md`](../ml/README.md) · dataset provenance: [`ml/DATASETS.md`](../ml/DATASETS.md).
+- Full project report (PDF): [project site](https://aliviahossain.github.io/Crop_detection_management/report/).
+- Full capability-to-code mapping: [`docs/PS_TRACEABILITY.md`](docs/PS_TRACEABILITY.md) · system map: [`ARCHITECTURE.md`](ARCHITECTURE.md) · mobile app: [`mobileapp/mobileapp.md`](mobileapp/mobileapp.md) · architecture rationale: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · ML pipeline: [`ml/README.md`](ml/README.md) · dataset provenance: [`ml/DATASETS.md`](ml/DATASETS.md).
 
 ---
 

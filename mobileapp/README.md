@@ -21,24 +21,28 @@ screens for maps and charts, and the review queue is inherently multi-user.
 | 7. Sync worker + digest endpoint | not started |
 | 8. Weather prefetch | not started (deterministic synthetic feed in the meantime) |
 
-Nothing here requires Flutter yet. Step 1 is pure Python and runs against the
-existing backend.
+The fixtures and tools are pure Python and run against the existing backend;
+the app itself needs Flutter. The full implementation reference — API surface,
+Android specifics, build steps, troubleshooting — is
+[`mobileapp.md`](mobileapp.md).
 
 ## Layout
 
 ```
 mobileapp/
-  fixtures/          Language-neutral golden vectors. See FORMAT.md.
-  tools/             Fixture generator + CI guard (Python).
-  cropguard_domain/  Pure Dart domain package.            (step 2)
-  app/               Flutter application.                 (step 6)
-  packs/             Crop packs, pack-shaped from day one. (step 5)
+  fixtures/   Language-neutral golden vectors. See FORMAT.md.
+  tools/      Fixture + demo-data generators, pack builder, publish guard (Python),
+              stage_web.ps1 (builds the frontend into the app's assets).
+  app/        Flutter application. The Dart domain port lives in app/lib/domain/,
+              the KB in app/lib/kb/, the pack store in app/lib/packs/.
 ```
+
+Built packs land in `dist/packs/` at the repo root (gitignored), not here.
 
 ## Crop packs: building and hosting
 
 ```bash
-python mobileapp/tools/build_pack.py --crop potato --version 1.0.0
+python mobileapp/tools/build_pack.py --crop potato --version 1.0.1
 python mobileapp/tools/build_pack.py --version 1.0.0     --detector croprow --detector crophealth
 python mobileapp/tools/build_pack.py --index        # rebuild the catalogue
 ```
@@ -49,12 +53,12 @@ can live on S3, R2, Cloudflare or any bucket that serves files over HTTPS:
 
 ```
 dist/packs/index.json                     the catalogue, a few hundred bytes
-dist/packs/potato/1.0.0/manifest.json     per-file SHA-256
-dist/packs/potato/1.0.0/model.onnx        the weights
-dist/packs/potato/1.0.0/thresholds.json   tuned FOR those weights
-dist/packs/potato/1.0.0/taxonomy.json     class list, in model index order
-dist/packs/potato/1.0.0/strings.json      class names + advisory text, 4 langs
-dist/packs/potato/1.0.0/kb/*.md           the pages the advisory is built from
+dist/packs/potato/1.0.1/manifest.json     per-file SHA-256
+dist/packs/potato/1.0.1/model.onnx        the weights
+dist/packs/potato/1.0.1/thresholds.json   tuned FOR those weights
+dist/packs/potato/1.0.1/taxonomy.json     class list, in model index order
+dist/packs/potato/1.0.1/strings.json      class names + advisory text, 4 langs
+dist/packs/potato/1.0.1/kb/*.md           the pages the advisory is built from
 ```
 
 The phone fetches `index.json` first — a few hundred bytes before deciding
@@ -78,6 +82,12 @@ The default in `app/lib/packs/pack_store.dart` is
 `https://packs.cropguard.in/packs`, which **does not exist yet**. Until that
 bucket is real, every build needs the `--dart-define` above or the crop picker
 will show "Could not get the crop list".
+
+Packs are hosted today on GitHub Pages, from the `gh-pages` branch, and the
+published APK is built with `PACK_CATALOG_BASE=https://aliviahossain.github.io/Crop_detection_management/packs`. Before pushing that branch,
+run `python mobileapp/tools/verify_published_packs.py` from the publishing
+worktree: it hashes the staged git blobs, so a line-ending change git made on
+the way in fails here rather than on a farmer's phone.
 
 To try it without a bucket at all, serve `dist/` from your machine and point
 the handset at it over the same wifi:
@@ -248,7 +258,7 @@ packs/<crop>@<version>/
   taxonomy.json     class list, threat keys, crop-stage factors
   kb/*.md           disease pages, including the dose tables
   strings.json      mr/hi/bn/en advisory strings for this crop
-  manifest.json     version, per-file SHA-256, min_app_version, signature
+  manifest.json     version, per-file SHA-256, min_app_version, signature (null for now)
 ```
 
 Weights alone are not a pack. A model that predicts `tomato_late_blight` with
@@ -261,9 +271,11 @@ Three rules that fall out of that:
 * **Thresholds and weights version together, atomically.** Mixing a
   re-quantised model with the previous threshold file is a silent accuracy
   regression no test catches and no farmer reports.
-* **Packs are signed and hash-verified**, and installed atomically
-  (download → verify → swap). The payload contains pesticide doses; TLS
-  protects the transport, not a compromised bucket or a wrong upload.
+* **Packs are hash-verified**, and installed atomically (download → verify →
+  swap). The payload contains pesticide doses; TLS protects the transport, not
+  a compromised bucket or a wrong upload. The manifest has a `signature` field
+  and the installer can check it, but nothing is signed yet: `build_pack.py`
+  writes `null` and `allowUnsigned` defaults to `true`.
 * **Every crop is downloaded, including potato.** An earlier draft of this
   document had potato shipping inside the APK. It does not: bundling it would
   add ~45 MB to every install and, worse, would leave the download-verify-swap

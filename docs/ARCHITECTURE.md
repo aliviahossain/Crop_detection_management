@@ -2,6 +2,8 @@
 
 Design decisions and their reasons. The README covers *what* the system does; this
 covers *why it is built this way*, which is what a reviewer or a new contributor needs.
+For the one-diagram map of the web and mobile deployments, see
+[`../ARCHITECTURE.md`](../ARCHITECTURE.md).
 
 ## The spine: `Case`
 
@@ -200,10 +202,66 @@ banner explaining each one. A judge, an officer, or a teammate should never have
 whether a number came from a real model or a fallback. The alternative - quietly
 returning plausible-looking output - is how a demo becomes misleading.
 
+## Why the farmer app is the web UI on a loopback server
+
+The Android app ([`mobileapp/`](../mobileapp/)) does not reimplement the UI and does not
+call the backend. It bundles the same React build, loads it in a WebView from
+`http://127.0.0.1:<port>`, and answers the page's `fetch('/api/...')` calls from a Dart
+HTTP server in the same process.
+
+- **One UI, two deployments.** Every farmer-facing screen, translation and fix lands in
+  both places from the same source. The HTTP API is the seam, so the page cannot tell
+  which world it is in.
+- **The judgement ports, the heavy stack does not.** Risk models, triage, geo cells and
+  the BM25 retriever are small and deterministic, so they were ported to Dart and are
+  held to the Python by golden vectors (`mobileapp/fixtures/`). LangGraph, ChromaDB,
+  XGBoost and SQLAlchemy stay on the server; the handset runs the same four advisory
+  steps as plain function calls.
+- **Models are downloaded, not bundled.** A crop is a pack (weights, thresholds,
+  taxonomy, strings, KB pages) verified by per-file SHA-256 and installed atomically. The
+  only network edge from the phone is that one-time download from a static host.
+
+The map of both deployments is [`../ARCHITECTURE.md`](../ARCHITECTURE.md), and the
+implementation detail is [`mobileapp/mobileapp.md`](../mobileapp/mobileapp.md).
+
+## Why photo inference is a capability flag, not a build target
+
+`frontend/src/lib/detectPhoto.js` is the one place the two deployments behave
+differently. When `GET /detect/status` includes `inference: "in_page"`, the page decodes
+the photo, runs the onnxruntime-web session it already has for live scanning, and posts
+only the detections back for triage and the advisory. Without that key it uploads to
+`POST /detect` as before.
+
+Branching on what the API advertises, rather than on a build flag, keeps one bundle for
+both, and keeps everything judgemental in the domain code: the phone and the server reach
+the same verdict from the same detections. On the handset `POST /detect` returns 503 by
+design, naming the crop to install; it never tells a farmer to find a network for a
+diagnosis the phone can already do.
+
+## Why the dev server serves `/ort` itself
+
+onnxruntime-web loads its runtime with `import('/ort/ort-wasm-simd-threaded.mjs')`. In
+development Vite treats that as a source import of a `public/` file and rejects it, so
+the on-device session silently never starts and every scan falls back to the server.
+`frontend/vite.config.js` registers a small middleware that serves `public/ort/` raw,
+ahead of Vite's transforms, and refuses paths that escape that directory. Production
+builds copy `public/` as-is and are unaffected.
+
+## Why PostgreSQL is a URL, not a code path
+
+SQLite is the default so a fresh clone runs with no services. A deployment sets
+`DATABASE_URL=postgresql://…`; `database.py` rewrites the scheme to
+`postgresql+psycopg://` so SQLAlchemy uses psycopg 3 (the driver in
+`requirements.txt`), and nothing else changes. The SQLite-only
+`check_same_thread` argument is applied only to SQLite URLs.
+
 ## What is deliberately not built
 
 - **Authentication.** Officer endpoints are open. A real deployment needs role-based
   access before the review queue is exposed.
+- **Mobile persistence and sync.** The Android app keeps no local case database and has
+  no outbox, so nothing a farmer records is saved or uploaded yet, and no device feeds
+  cross-farm outbreak pressure. Its officer screens run on bundled demo data.
 - **Automatic retraining.** `export_feedback.py` is manual and warns on small or
   district-skewed batches. Retraining on unexamined field data is how a model quietly
   degrades.

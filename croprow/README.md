@@ -70,9 +70,15 @@ pytorch.org). A GPU is strongly recommended for training.
 | 07 | `07_speed`         | ready   | ONNX + TensorRT FP16 export; benchmark imgsz 640/512/416 |
 | 08 | `08_package_dataset` | ready | build a portable, drop-in YOLO dataset bundle for a trainer (see below) |
 
-01 and 02 are already executed (outputs saved in the notebooks). 03–07 ship
-**unrun** — whoever trains runs them; they stop with a clear message if weights
-or your frames are missing rather than fabricating a fallback.
+01 and 02 are already executed (outputs saved in the notebooks). 03–07 are
+committed **unrun** — whoever trains runs them; they stop with a clear message if
+weights or your frames are missing rather than fabricating a fallback.
+
+**Current weights.** A YOLO11n checkpoint was trained on Kaggle on 2026-09-09
+(`models/best.pt` + `models/best.onnx`, class `lettuce`). The files are kept out
+of git; the ONNX is what the web app serves at `/croprow` and what the Android
+app downloads as the `croprow` detector pack. No row has been logged to
+[`RESULTS.md`](RESULTS.md) for it yet, so there is no metric to quote.
 
 ## Handing the dataset to someone else to train
 

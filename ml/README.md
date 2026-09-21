@@ -35,7 +35,7 @@ silently mislabels every prediction in production, and nothing will error.
 | `export_onnx.py` | Export + verify the output shape the backend expects |
 | `export_feedback.py` | Package expert-validated field cases for the next training run |
 | `train_risk_xgb.py` | Optional secondary risk layer — needs real outbreak data |
-| `weights/` | Drop `best.onnx`, `thresholds.json` here; gitignored |
+| `weights/` | Drop `best.onnx` / `best.pt` here (gitignored). `thresholds.json` and `metrics.json` for the current model are committed. The same files go into the Android app's `potato` crop pack via `mobileapp/tools/build_pack.py` |
 
 ---
 

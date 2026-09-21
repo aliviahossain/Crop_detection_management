@@ -355,7 +355,8 @@ flutter build apk --release \
 > The compiled default in `app/lib/packs/pack_store.dart` is
 > `https://packs.cropguard.in/packs`, which **does not exist yet**. Until that
 > bucket is real, every build needs the `--dart-define` above or the crop picker
-> shows "Could not get the crop list".
+> shows "Could not get the crop list". The published APK was built with
+> `PACK_CATALOG_BASE=https://aliviahossain.github.io/Crop_detection_management/packs`, where the packs are hosted today.
 
 **Testing with no bucket at all** — serve `dist/` from your machine over the
 same wifi:
@@ -720,14 +721,20 @@ crop picker states plainly and allows you to skip.
 
 ## 11. Distribution
 
-`dist/` holds the install page, built as a plain static site:
+`dist/` holds the install page, built as a plain static site, and is published
+to the `gh-pages` branch, served at
+<https://aliviahossain.github.io/Crop_detection_management/>:
 
 ```
 dist/index.html            the landing/install page (dark-mode aware)
 dist/cropguard.apk         the build
 dist/cropguard.apk.sha256  e1c3663d…c84cd32
 dist/packs/**              the catalogue and the packs
+report/                    the project report page + PDF (on gh-pages only)
 ```
+
+The install page carries a *Download Report PDF* button beside the APK button,
+and a card linking to `report/`, which embeds the PDF with a download fallback.
 
 The page tells the farmer the three things that actually matter: it is Android
 only and the browser will need install permission; it needs a connection
@@ -778,7 +785,7 @@ Stated here rather than left to be discovered:
 | **Weather prefetch** | The deterministic synthetic feed is the *primary* source, not a cache of a real forecast |
 | **Pack signing** | `signature: null` everywhere; `allowUnsigned` defaults true. SHA-256 is the real control |
 | **Release signing key** | Debug key in `build.gradle.kts` |
-| **`packs.cropguard.in`** | Does not exist; every build needs `--dart-define=PACK_CATALOG_BASE` |
+| **`packs.cropguard.in`** | Does not exist; every build needs `--dart-define=PACK_CATALOG_BASE` (the published APK uses the GitHub Pages host) |
 | **iOS** | Not attempted. The architecture ports (WKWebView + a loopback server), but nothing has been tried |
 
 ### Two safety questions on the record

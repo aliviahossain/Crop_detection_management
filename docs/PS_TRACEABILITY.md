@@ -8,7 +8,7 @@ flags this explicitly: evaluators check solution-to-PS alignment.
 
 | # | Required by the PS | Implemented in | Demonstrate with | Status |
 |---|---|---|---|---|
-| 1 | **Image-based symptom identification** | `services/detector.py` (ONNX Runtime, letterbox + per-class NMS), `routers/detect.py`, plus in-browser inference via `frontend/src/lib/liveDetector.js` | `POST /detect` (photo) · `POST /detect/frame` (live) · the **Live scan** page | Serving layer complete and tested, including real-time on-device scanning; needs weights from the Kaggle run |
+| 1 | **Image-based symptom identification** | `services/detector.py` (ONNX Runtime, letterbox + per-class NMS), `routers/detect.py`, plus in-browser inference via `frontend/src/lib/liveDetector.js` and `detectPhoto.js` (in-page photo inference on the handset) | `POST /detect` (photo) · `POST /detect/frame` (live) · the **Live scan** page · the Android app with the radio off | Complete and tested. Fine-tuned YOLOv8s weights (mAP50 0.928 on lab + field val) are kept out of git and published in the `potato` crop pack |
 | 2 | **Pest-trap or sensor inputs** | `models.SensorReading`, `routers/sensors.py`, consumed by `risk_engine._trap_pressure` | `POST /sensors`, `POST /sensors/batch`, `GET /sensors/summary` | Complete; trap counts feed tuber-moth risk and appear on the map |
 | 3 | **Weather-based risk forecasting** | `services/risk_models.py` (Smith, Beaumont, TOMCAST, degree-days), `services/risk_engine.py`, `services/weather.py` | `POST /risk`, `GET /risk/models`, `GET /risk/weather` | Complete; runs with no training data by design |
 | 4 | **Geospatial hotspot mapping** | `services/geo.py`, `routers/hotspots.py`, `frontend/src/pages/MapPage.jsx`, `frontend/src/lib/heatLayer.js` | `GET /hotspots`, `GET /hotspots/points` (density heatmap), `GET /hotspots/geojson` | Complete; grid and true density-heatmap views, GeoJSON also opens in QGIS |
@@ -20,6 +20,7 @@ flags this explicitly: evaluators check solution-to-PS alignment.
 | 10 | **Follow-up monitoring** | `models.FollowUp`, `routers/followup.py` | `GET /followups?due_only=true`, `PATCH /followups/{id}` | Complete; a failed outcome auto-escalates the case |
 | 11 | **Learns from field confirmations** | `models.TrainingSample`, `ml/export_feedback.py`, `GET /review/stats/accuracy` | Confirm a case, then run `export_feedback.py` | Loop complete; retraining is a deliberate manual step |
 | 12 | **Dashboards for agriculture officials** | `routers/dashboard.py`, `frontend/src/pages/DashboardPage.jsx` | `GET /dashboard/summary`, `/trend`, `/cases` (each with `include_demo` to separate real from seeded demo data) | Complete; a live-only / demo switch drives every panel |
+| 13 | **Farmer-friendly, usable in the field** ("farmer- and extension-worker-friendly") | `mobileapp/` — Flutter shell, on-device Dart API (`app/lib/local_server.dart`), crop packs (`app/lib/packs/`) | Install the APK from the [project site](https://aliviahossain.github.io/Crop_detection_management/), download the potato pack once, then use it in airplane mode | Farmer loop complete offline; local case storage and sync not built yet |
 
 ## Expected outcomes → what produces them
 
@@ -55,3 +56,7 @@ Stating these is part of the design, not an omission:
 6. **Weather history is cached, not backfilled.** Free-tier OpenWeatherMap has no history
    API, so the Smith Period looks back over our own accumulating cache and is transparent
    about how much of the window is synthetic.
+7. **The Android app stores and syncs nothing yet.** Cases a farmer records on the phone
+   are not persisted or uploaded, its weather is the deterministic synthetic feed, and its
+   officer screens run on bundled demo data. Crop packs are SHA-256 verified but not yet
+   signed.

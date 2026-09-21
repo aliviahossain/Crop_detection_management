@@ -308,7 +308,9 @@ pointed at a host that later disappears can never be recovered without
 reinstalling — not something you can ask a farmer to do.
 
 Build-time default: `--dart-define=PACK_CATALOG_BASE=https://<bucket>/packs`.
-The compiled fallback `https://packs.cropguard.in/packs` **does not exist yet**.
+The compiled fallback `https://packs.cropguard.in/packs` **does not exist yet**. Packs are
+hosted today on GitHub Pages (the `gh-pages` branch), and the published APK is built with
+`PACK_CATALOG_BASE=https://aliviahossain.github.io/Crop_detection_management/packs`.
 
 ---
 ## 7. What is offline, what needs a network
@@ -567,6 +569,9 @@ A failing `--check` is **read, not regenerated away**.
    `export_onnx.py` → `tune_thresholds.py`.
 5. **Packs:** `build_pack.py` (UTF-8, LF **always**) → `dist/packs/**` →
    `verify_published_packs.py` → static bucket (S3 / R2 / GitHub Pages).
+6. **Publish:** `dist/` is pushed to the `gh-pages` branch and served at
+   <https://aliviahossain.github.io/Crop_detection_management/> — install page, APK,
+   `packs/**`, and the project report under `report/`.
 
 ### What is in the 54 MB
 
@@ -700,7 +705,7 @@ app, the two scans are lab tools.
 | Real weather prefetch | Synthetic feed is the *primary* source, not a cache |
 | Pack signing | `signature: null`; SHA-256 is the real control |
 | Release signing key | Debug key in `build.gradle.kts` |
-| `packs.cropguard.in` bucket | Does not exist; builds need `--dart-define=PACK_CATALOG_BASE` |
+| `packs.cropguard.in` bucket | Does not exist; builds need `--dart-define=PACK_CATALOG_BASE` (the published APK points at GitHub Pages) |
 | iOS | Not attempted (would port as WKWebView + loopback server) |
 
 ---

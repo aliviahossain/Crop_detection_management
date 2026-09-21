@@ -14,7 +14,8 @@ Government of Maharashtra · Maharashtra State Innovation Society (Dept. of Skil
 **Team members** — Om Singh Lodhi · Alivia Hossain · Aditi Bande · Karuna Anjana · Gaurav Vaishampayan · Pradyumna Verma
 
 **Repository:** https://github.com/aliviahossain/Crop_detection_management
-**Deployed application:** https://cropguard-frontend-rhzv.onrender.com/
+**Deployed application (web):** https://cropguard-frontend-rhzv.onrender.com/
+**Android app, crop packs and project report:** https://aliviahossain.github.io/Crop_detection_management/
 **Reference repository (crop-row lab):** https://github.com/NanH5837/LettuceMOTS
 
 ---
@@ -25,6 +26,12 @@ robotics. It pairs on-device camera scanning with weather-driven forecasting, sa
 multilingual advisories, cross-farm outbreak intelligence, and a geospatial dashboard.
 Every requirement in the problem statement is implemented and traceable to code
 ([`docs/PS_TRACEABILITY.md`](docs/PS_TRACEABILITY.md)).
+
+It ships as **two deployments of one codebase**: a React + FastAPI web app for officers, and
+an **Android app for farmers** that runs the whole farmer loop on the handset with the radio
+off — the same React UI inside a WebView, backed by a Dart port of the backend. See
+[`ARCHITECTURE.md`](ARCHITECTURE.md) for the one-diagram map of both, and
+[`mobileapp/`](mobileapp/) for the app.
 
 ## Contents
 
@@ -97,9 +104,14 @@ CropGuard delivers a closed loop: **Forecast → Triage → Detect → Verify �
   nearby raises your risk before you have detected anything yourself.
 - **Proactive risk alerts** ([`RiskPage.jsx`](frontend/src/pages/RiskPage.jsx)) — weather-driven
   epidemiological modelling that warns days before spores visibly manifest.
+- **Offline Android app** ([`mobileapp/`](mobileapp/)) — forecast, photo or live scan,
+  diagnosis, triage, treatment advice and follow-up all run on the phone. A connection is
+  needed once, to download a crop pack; the APK is published on the
+  [install page](https://aliviahossain.github.io/Crop_detection_management/).
 - **On-device live video scanner** — edge AI running inside the browser at zero per-frame
   server cost, operational in rural dead zones with no internet connection.
-- **Photo upload** as an alternative to live scanning, routed through the same pipeline.
+- **Photo upload** as an alternative to live scanning, routed through the same pipeline. On
+  the handset the photo is diagnosed in-page too, never uploaded.
 - **Safe, localized advisories** — non-hallucinatory IPDM guidance with an explicit
   *do not spray* directive for healthy crops.
 - **Follow-up and resistance tracking** — check-ins on treatment efficacy that escalate
@@ -201,9 +213,20 @@ Tests:
 pip install -r backend/requirements-dev.txt
 pytest backend/tests -q      # 172 tests, no network, no trained model needed
 
-cd frontend && npm test      # 59 tests: browser decoder parity, quality gate,
+cd frontend && npm test      # 66 tests: browser decoder parity, quality gate,
                              # verdict stabilizer, unique plant tracker,
-                             # canopy airflow, real onnxruntime-web run
+                             # canopy airflow, in-page photo inference,
+                             # real onnxruntime-web run
+```
+
+The backend suite assumes no trained detector is installed. With `ml/weights/best.onnx`
+present locally, the few tests that assert the "model missing" behaviour fail by design.
+
+Mobile app (needs Flutter; see [`mobileapp/mobileapp.md`](mobileapp/mobileapp.md)):
+
+```bash
+cd mobileapp/app && flutter test                     # 163 tests
+python mobileapp/tools/export_fixtures.py --check    # Dart port vs Python: 108 golden cases
 ```
 
 Optional extras. Each has a tested fallback, so none is required — but installing them
@@ -256,9 +279,18 @@ backfill that the response reports explicitly.
 | Model | Role |
 |---|---|
 | **YOLOv8s (potato pathology)** | Disease detector trained on combined laboratory and field splits, exported to ONNX for CPU-only serving |
-| **YOLOv8 CropRow (cultivator guidance)** | Single-class plant localizer wired to [`plantTracker.js`](frontend/src/lib/plantTracker.js) |
-| **YOLOv8 CropHealth (vigour triage)** | Two-class healthy / unhealthy plant detector over the same footage |
+| **YOLO11n CropRow (cultivator guidance)** | Single-class plant localizer wired to [`plantTracker.js`](frontend/src/lib/plantTracker.js) |
+| **YOLO11n CropHealth (vigour triage)** | Two-class healthy / unhealthy plant detector over the same footage |
 | **Ultralytics & PyTorch** | Cloud-isolated training environment (Kaggle GPU), never the dev laptop |
+
+### Mobile app (farmers)
+
+| Technology | Role |
+|---|---|
+| **Flutter (Android)** | Shell: WebView host, camera permission, file-chooser bridge, first-launch crop picker |
+| **Android WebView** | Runs the same React bundle, loaded from a loopback origin |
+| **Dart `dart:io` HttpServer** | On-device port of the API: risk models, triage, BM25 advisory, pack store, demo data |
+| **Crop packs** | Model + thresholds + taxonomy + strings + KB pages, SHA-256 verified, downloaded once from a static host |
 
 ### Agronomic modelling and advisory
 
@@ -273,6 +305,11 @@ backfill that the response reports explicitly.
 ---
 
 ## 7. Architecture
+
+This is the **web deployment**. The Android app answers the same `/api/...` calls from an
+in-process Dart server instead, and never calls this backend; its only network edge is a
+one-time crop-pack download from a static host. [`ARCHITECTURE.md`](ARCHITECTURE.md) draws
+both deployments in one diagram.
 
 ```
 ┌──────────────────────────────┐
@@ -439,7 +476,14 @@ Inference runs **in the browser** via onnxruntime-web: no network per frame, no 
 and scanning keeps working on a bad field connection or none at all. The WASM runtime is
 served from our own origin rather than a CDN, precisely so the offline claim is real. If WASM
 cannot start, or no model is installed, it falls back to `/detect/frame` and then to plain
-photo capture — and says which mode it is in.
+photo capture — and says which mode it is in. In development, `vite.config.js` serves
+`public/ort/` raw ahead of Vite's transform middleware; without that, Vite refuses the
+runtime's dynamic `import('/ort/…mjs')` and the on-device session never starts.
+
+Photo uploads go through one seam, [`detectPhoto.js`](frontend/src/lib/detectPhoto.js). When
+`GET /detect/status` advertises `inference: "in_page"` (the Android app does), the page decodes
+the photo, runs the same onnxruntime-web session, and asks the API only for triage and the
+advisory. The web deployment has no such key and keeps uploading to `/detect` unchanged.
 
 The browser decoder is a deliberate mirror of `services/detector.py`, and
 `frontend/src/lib/__tests__/` asserts they agree on the same numbers — including one test
@@ -492,7 +536,8 @@ list, no case, no advisory, no database write.
 - **The same honest serving story.** On-device ONNX from `GET /croprow/model` is preferred
   (offline, no per-frame server call), falling back to `/croprow/frame` and then to a clear
   "model not installed" message. Weights are not committed — export the trained model once
-  with `python croprow/export_onnx.py`.
+  with `python croprow/export_onnx.py`. The Android app gets the same weights as the
+  `croprow` detector pack.
 - **Browser-playable video.** Browsers cannot decode the LettuceMOTS clips' MPEG-4 Part 2
   codec, so `croprow/convert_videos.py` transcodes them to H.264 and
   `croprow/generate_video.py` writes H.264 directly.
@@ -529,9 +574,10 @@ camera or uploaded clip, boxes drawn per frame, no case, no advisory, no databas
 
 ### 10.3 Current limitations and the plan
 
-Both modules are **in development** by design: the training notebooks ship unrun, the weights
-are not committed, and the features are grouped under "In the lab · beta" so they read as
-previews rather than shipped tools. The health labels are derived from a colour rule over
+Both modules are **in development** by design, and grouped under "In the lab · beta" so they
+read as previews rather than shipped tools. Both have been trained once on Kaggle (YOLO11n);
+the weights are kept out of git and published as the `croprow` and `crophealth` detector
+packs. No run has been logged to either `RESULTS.md` yet, so neither has a quotable metric. The health labels are derived from a colour rule over
 lettuce annotation polygons because no suitable agronomist-labelled healthy/unhealthy crop-row
 dataset was available; replacing that rule with expert labels is the next step, followed by
 mounting the pair on a real cultivator to steer inter-row weeding and remove unhealthy plants
@@ -552,7 +598,8 @@ in the same pass.
   read. A guardrail prevents it from ever cancelling a rule that already fired.
 - **Offline ready.** Live camera scanning and multilingual advisories run with no network and
   no paid API calls. The WASM runtime is served from the app's own origin, not a CDN,
-  precisely so the offline claim is real.
+  precisely so the offline claim is real. The Android app takes this all the way: risk
+  forecast, photo diagnosis, triage and dose tables all work in airplane mode.
 - **Honest AI.** The dashboard separates broken components (`degraded`) from deliberate design
   limits (`by_design`), so nobody has to guess whether a number came from a real model or a
   fallback. No result is fabricated to look complete.
@@ -608,6 +655,10 @@ python ml/benchmark_inference.py --model ml/weights/best.onnx
 Then place `ml/weights/` in the repo — `GET /meta/health` stops reporting
 `detection_model_missing`, and `GET /detect/status` shows the tuned thresholds in use.
 
+For the Android app, package the weights with their thresholds and KB pages as a crop pack
+(`python mobileapp/tools/build_pack.py --crop potato --version <x.y.z>`) and publish it;
+see [`mobileapp/mobileapp.md`](mobileapp/mobileapp.md#4-crop-packs).
+
 ### What this pipeline does that a stock YOLO tutorial does not
 
 | Concern | How it is handled |
@@ -644,7 +695,7 @@ backend/app/
                  dashboard · home · chat · croprow · crophealth · meta
   services/      detector · weather · risk_models · risk_engine · risk_secondary
                  knowledge_base · advisory · triage · translate · pipeline · geo · taxonomy
-                 home_overview · crophealth_detector
+                 home_overview · chat · croprow_detector · crophealth_detector
   data/kb/       IPDM knowledge base (human-reviewed markdown - edit this, not the code)
   models.py      cases · follow-ups · sensor readings · training samples · weather cache
 backend/tests/   172 tests: agronomic models, triage rules, ONNX decoding (fake and
@@ -658,8 +709,15 @@ ml/notebooks/    Kaggle training notebook (potato, 3 classes, 100 epochs)
 frontend/src/    React app - live scanner, farmer flow, risk page, Leaflet map,
                  dashboard, review queue, CropRow + CropHealth labs (beta)
 frontend/src/lib/ yoloDecode (browser mirror of the server decoder) · liveDetector
-                 (onnxruntime-web, parameterised per model) · plantTracker (unique
-                 plant counting) · frameQuality · stabilizer · canopyAirflow · i18n
+                 (onnxruntime-web, parameterised per model) · detectPhoto (upload vs
+                 in-page photo inference) · plantTracker (unique plant counting)
+                 frameQuality · stabilizer · canopyAirflow · heatLayer · i18n
+mobileapp/       Offline Android app (Flutter + WebView + on-device Dart API):
+  app/lib/       main.dart shell · local_server.dart · domain/ (risk, triage, weather,
+                 geo, taxonomy) · kb/ (BM25 + advisory) · packs/ · demo/
+  fixtures/      golden vectors pinning the Dart port to the Python services
+  tools/         build_pack · verify_published_packs · export_fixtures
+                 export_demo_dataset · stage_web.ps1
 croprow/         CropRow lab (in development): a single-class crop (lettuce) localizer,
                  separate from ml/ - training notebooks, best.pt, export_onnx.py,
                  convert_videos.py + generate_video.py (H.264) video helpers
@@ -667,7 +725,8 @@ croprow_disease/ CropHealth lab (in development): a two-class healthy/unhealthy 
                  detector over the same footage - health.py (the colour rule that
                  derives the labels), dataset.py, training notebooks, export_onnx.py
 scripts/         demo data seeding · risk-dataset export for the XGBoost layer · dev runners
-docs/            architecture notes and PS traceability matrix
+docs/            architecture rationale, PS traceability matrix, training plots
+ARCHITECTURE.md  one-diagram system map, web and mobile
 ```
 
 ---
@@ -702,6 +761,9 @@ upgrade components from their documented fallbacks to live data.
   a validated agronomic rule.
 - **Real weather history.** Backfill the Smith Period window from a paid or archival weather
   source instead of relying on the system's own accumulating cache.
+- **Mobile persistence and sync.** The Android app does not yet store the cases a farmer
+  records, and no device contributes to cross-farm outbreak pressure. Next: a local database
+  with an outbox, a sync worker, real weather prefetch, and signed packs and APK.
 - **Agronomist-labelled crop-row health.** Replace the colour-rule labels in
   `croprow_disease/health.py` with expert annotations, then mount the crop-row pair on a real
   cultivator to steer inter-row weeding and remove unhealthy plants in the same pass.
@@ -773,5 +835,8 @@ harvest loss, and safety-gated advisories to cut unnecessary chemical input.
 
 See [`docs/PS_TRACEABILITY.md`](docs/PS_TRACEABILITY.md) — every required capability in the
 official "Expected Solution" text mapped to the code that implements it. A longer narrative
-version of this document lives in [`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md), and the
-architecture notes in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+version of this document lives in [`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md). The system map
+is [`ARCHITECTURE.md`](ARCHITECTURE.md), the design rationale is
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), and the mobile app's implementation reference
+is [`mobileapp/mobileapp.md`](mobileapp/mobileapp.md). The full project report (PDF) is on
+the [project site](https://aliviahossain.github.io/Crop_detection_management/report/).
