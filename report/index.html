@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CropGuard — project report</title>
+<style>
+  :root {
+    --bg: #f4f6f4; --card: #fff; --ink: #14251c; --muted: #5b6b62;
+    --line: #e2e7e3; --brand: #2f6f4e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121614; --card: #1b201d; --ink: #e8efea; --muted: #9db0a5;
+      --line: #2b332e; --brand: #6fbf92;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: 24px 16px 64px;
+  }
+  main { max-width: 960px; margin: 0 auto; }
+  .back { color: var(--muted); text-decoration: none; font-size: .9rem; }
+  .back:hover { color: var(--brand); }
+  h1 { font-size: 1.7rem; margin: 8px 0 4px; }
+  .lede { color: var(--muted); margin: 0 0 20px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 20px; }
+  a.btn {
+    display: inline-block; text-decoration: none; padding: 12px 22px;
+    border-radius: 10px; font-weight: 600; font-size: 1rem;
+  }
+  a.dl { background: var(--brand); color: #fff; }
+  a.open { border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+  .meta { color: var(--muted); font-size: .875rem; }
+  .viewer {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    overflow: hidden; height: 80vh; min-height: 480px;
+  }
+  .viewer object { display: block; width: 100%; height: 100%; border: 0; }
+  .fallback { padding: 24px 20px; margin: 0; }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="../">&larr; CropGuard install page</a>
+  <h1>Project report</h1>
+  <p class="lede">CropGuard: crop disease detection and management &mdash; full project report.</p>
+
+  <div class="actions">
+    <a class="btn dl" href="CropGuard_Project_Report.pdf" download>Download PDF</a>
+    <a class="btn open" href="CropGuard_Project_Report.pdf" target="_blank" rel="noopener">Open in new tab</a>
+    <span class="meta">19 pages &middot; 1.0 MB</span>
+  </div>
+
+  <div class="viewer">
+    <object data="CropGuard_Project_Report.pdf#view=FitH" type="application/pdf">
+      <p class="fallback">
+        Your browser can't show the PDF inline.
+        <a href="CropGuard_Project_Report.pdf" download>Download the report</a> instead.
+      </p>
+    </object>
+  </div>
+</main>
+</body>
+</html>
