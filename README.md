@@ -1,22 +1,19 @@
-# CropGuard Maharashtra
+# CropGuard
 
-**Smart India Hackathon 2026 · Problem Statement PS26131 — Early detection and management of crop diseases and pest infections**
-Government of Maharashtra · Maharashtra State Innovation Society (Dept. of Skills, Employment, Entrepreneurship and Innovation)
+**Smart India Hackathon 2026**
 
 | | |
 |---|---|
-| **Problem Statement ID** | 26131 |
 | **Theme** | Agriculture, Food-Tech & Rural Development |
 | **Category** | Software |
-| **Team ID** | SIH2613/0149 |
+| **Team ID** | 151590 |
 | **Team name** | git blame |
 
-**Team members** — Om Singh Lodhi · Alivia Hossain · Aditi Bande · Karuna Anjana · Gaurav Vaishampayan · Pradyumna Verma
+**Team members** — Om Singh Lodhi · Alivia Hossain · Gaurav Vaishampayan
 
 **Repository:** https://github.com/aliviahossain/Crop_detection_management
 **Deployed application (web):** https://cropguard-frontend-rhzv.onrender.com/
 **Android app, crop packs and project report:** https://aliviahossain.github.io/Crop_detection_management/
-**Reference repository (crop-row lab):** https://github.com/NanH5837/LettuceMOTS
 
 ---
 
@@ -142,7 +139,6 @@ That is a deliberate choice, not a shortcut:
 - Late blight is the textbook weather-driven epidemic — the **Smith Period** risk model is
   defined for it, so the detection and forecasting halves of this system reinforce each
   other on the same crop.
-- Potato is a major Maharashtra rabi crop with real extension demand.
 - Clean training imagery exists (PlantVillage), so the model can actually be trained on a
   free Kaggle GPU in one session.
 
@@ -774,7 +770,7 @@ upgrade components from their documented fallbacks to live data.
 
 ## 17. Revenue model
 
-CropGuard is built strictly as a **public good** for the Government of Maharashtra under the
+CropGuard is built strictly as a **public good** for India under the
 Smart India Hackathon. There is no subscription, no marketplace and no monetization model.
 The design goal is the opposite: minimise operating cost — free APIs, on-device inference, no
 per-request LLM calls — so the platform can be run at state scale on a public budget while the
@@ -817,11 +813,11 @@ own measurements):
 
 - **Adoption.** Roughly 10-15% of smartphone-owning Indian farmers actively use an
   agriculture-specific app; ~70% of educated farmers own a smartphone, with the remainder
-  getting farming information via WhatsApp groups and YouTube. Maharashtra leads digital
+  getting farming information via WhatsApp groups and YouTube. India leads digital
   onboarding under the MahaAgri-AI Policy (2025-2029), and MahaVISTAAR AI has onboarded 3 M+
   farmers, with AgriStack generating millions of land-verified IDs in the state.
 - **Productivity.** Precision-agriculture and AI advisory tools are associated with a 15-30%
-  average yield increase (up to ~40% in localized Maharashtra sugarcane and horticulture
+  average yield increase (up to ~40% in localized sugarcane and horticulture
   pilots), 15-25% lower input costs, and 20-35% income uplift when paired with market linkage.
 - **Wastage.** Precision management cuts excess chemical runoff and over-irrigation by 20-30%;
   output-linkage platforms reduce post-harvest losses from 25-40% down to 5-8%; and weather
