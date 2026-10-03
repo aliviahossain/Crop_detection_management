@@ -4,7 +4,7 @@ import HeatmapLayer from '../components/HeatmapLayer.jsx'
 import { api } from '../lib/api.js'
 import { prettify, useT } from '../lib/i18n.js'
 
-const CENTER = [19.4, 74.2] // roughly the centre of Maharashtra's potato belt
+const CENTER = [22.9, 79.0] // approximate geographic centre of India
 const INTENSITY_COLOR = {
   low: '#3f8f5f',
   moderate: '#c9a227',

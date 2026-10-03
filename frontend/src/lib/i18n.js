@@ -10,12 +10,12 @@ export const LANGUAGES = [
 ]
 
 const STRINGS = {
-  'app.title': { en: 'CropGuard', mr: 'क्रॉपगार्ड', hi: 'क्रॉपगार्ड', bn: 'ক্রপগার্ড' },
+  'app.title': { en: 'TerraSense AI', mr: 'TerraSense AI', hi: 'TerraSense AI', bn: 'TerraSense AI' },
   'app.subtitle': {
-    en: 'Potato disease alerts',
-    mr: 'बटाटा रोग इशारे',
-    hi: 'आलू रोग चेतावनी',
-    bn: 'আলুর রোগ সতর্কতা',
+    en: 'Smart Agriculture',
+    mr: 'Smart Agriculture',
+    hi: 'Smart Agriculture',
+    bn: 'Smart Agriculture',
   },
 
   'menu.open': { en: 'Menu', mr: 'मेनू', hi: 'मेनू', bn: 'মেনু' },
@@ -911,8 +911,8 @@ const STRINGS = {
     hi: 'आलू रोग पहचान और फसल पंक्ति स्कैन से अलग. यह कोई केस नहीं सहेजता.',
     bn: 'আলুর রোগ শনাক্তকরণ ও ফসল সারি স্ক্যান থেকে আলাদা. এটি কেস সংরক্ষণ করে না.',
   },
-  'chat.open': { en: 'Ask CropGuard', mr: 'क्रॉपगार्डला विचारा', hi: 'क्रॉपगार्ड से पूछें', bn: 'ক্রপগার্ডকে জিজ্ঞাসা করুন' },
-  'chat.title': { en: 'CropGuard Assistant', mr: 'क्रॉपगार्ड सहायक', hi: 'क्रॉपगार्ड सहायक', bn: 'ক্রপগার্ড সহায়ক' },
+  'chat.open': { en: 'Ask TerraSense AI', mr: 'TerraSense AI ला विचारा', hi: 'TerraSense AI से पूछें', bn: 'TerraSense AI-কে জিজ্ঞাসা করুন' },
+  'chat.title': { en: 'TerraSense AI Assistant', mr: 'TerraSense AI सहाय्यक', hi: 'TerraSense AI सहायक', bn: 'TerraSense AI সহায়ক' },
   'chat.subtitle': {
     en: 'Ask about potato disease or how to use the app',
     mr: 'बटाटा रोग किंवा अ‍ॅप वापराबद्दल विचारा',
@@ -920,10 +920,10 @@ const STRINGS = {
     bn: 'আলুর রোগ বা অ্যাপ ব্যবহার নিয়ে জিজ্ঞাসা করুন',
   },
   'chat.greeting': {
-    en: 'Hi! I can help with potato diseases, safe pesticide use, and using CropGuard. What would you like to know?',
-    mr: 'नमस्कार! बटाटा रोग, सुरक्षित कीटकनाशक वापर आणि क्रॉपगार्ड वापरण्यात मी मदत करू शकतो. काय जाणून घ्यायचे आहे?',
-    hi: 'नमस्ते! मैं आलू रोग, सुरक्षित कीटनाशक उपयोग और क्रॉपगार्ड चलाने में मदद कर सकता हूँ. आप क्या जानना चाहेंगे?',
-    bn: 'নমস্কার! আমি আলুর রোগ, নিরাপদ কীটনাশক ব্যবহার এবং ক্রপগার্ড চালাতে সাহায্য করতে পারি. আপনি কী জানতে চান?',
+    en: 'Hi! I can help with potato diseases, safe pesticide use, and using TerraSense AI. What would you like to know?',
+    mr: 'नमस्कार! बटाटा रोग, सुरक्षित कीटकनाशक वापर आणि TerraSense AI वापरण्यात मी मदत करू शकतो. काय जाणून घ्यायचे आहे?',
+    hi: 'नमस्ते! मैं आलू रोग, सुरक्षित कीटनाशक उपयोग और TerraSense AI चलाने में मदद कर सकता हूँ. आप क्या जानना चाहेंगे?',
+    bn: 'নমস্কার! আমি আলুর রোগ, নিরাপদ কীটনাশক ব্যবহার এবং TerraSense AI চালাতে সাহায্য করতে পারি. আপনি কী জানতে চান?',
   },
   'chat.placeholder': { en: 'Type your question…', mr: 'तुमचा प्रश्न लिहा…', hi: 'अपना सवाल लिखें…', bn: 'আপনার প্রশ্ন লিখুন…' },
   'chat.send': { en: 'Send', mr: 'पाठवा', hi: 'भेजें', bn: 'পাঠান' },
@@ -971,10 +971,10 @@ const STRINGS = {
   // --- Header help / FAQ ---
   'faq.open': { en: 'Help', mr: 'मदत', hi: 'मदद', bn: 'সাহায্য' },
   'faq.title': {
-    en: 'How to use CropGuard',
-    mr: 'क्रॉपगार्ड कसे वापरावे',
-    hi: 'क्रॉपगार्ड कैसे उपयोग करें',
-    bn: 'ক্রপগার্ড কীভাবে ব্যবহার করবেন',
+    en: 'How to use TerraSense AI',
+    mr: 'TerraSense AI कसे वापरावे',
+    hi: 'TerraSense AI कैसे उपयोग करें',
+    bn: 'TerraSense AI কীভাবে ব্যবহার করবেন',
   },
   'faq.intro': {
     en: 'A quick guide to the basics. Tap a question to see the answer.',
@@ -983,10 +983,10 @@ const STRINGS = {
     bn: 'মূল বিষয়ের দ্রুত নির্দেশিকা. উত্তর দেখতে প্রশ্নে চাপুন.',
   },
   'faq.q1': {
-    en: 'What does CropGuard do?',
-    mr: 'क्रॉपगार्ड काय करते?',
-    hi: 'क्रॉपगार्ड क्या करता है?',
-    bn: 'ক্রপগার্ড কী করে?',
+    en: 'What does TerraSense AI do?',
+    mr: 'TerraSense AI काय करते?',
+    hi: 'TerraSense AI क्या करता है?',
+    bn: 'TerraSense AI কী করে?',
   },
   'faq.a1': {
     en: 'It reads a photo of a potato leaf, names the disease, tells you what to do, and warns you from the weather before symptoms appear.',

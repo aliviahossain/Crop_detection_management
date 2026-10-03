@@ -264,40 +264,21 @@ export default function HomePage() {
               )}
             </section>
           </div>
-          <h3 style={{ marginTop: 0 }}>Quick Actions</h3>
+          <section className="quick-actions" aria-labelledby="quick-actions-title">
+            <div>
+              <h3 id="quick-actions-title">Field tools</h3>
+              <p className="muted small">Go straight to a task.</p>
+            </div>
+            <div className="quick-action-list">
+              <button className="primary auto" onClick={() => navigate('/scan')}>Scan a crop</button>
+              <button className="ghost" onClick={() => navigate('/risk')}>View risk forecast</button>
+              <button className="ghost" onClick={() => navigate('/map')}>Open field map</button>
+              <button className="ghost" onClick={() => navigate('/dashboard')}>Open dashboard</button>
+            </div>
+          </section>
+          <p className="muted small home-disclaimer">{t('home.disclaimer')}</p>
 
-<div className="inline">
-  <button
-    className="primary auto"
-    onClick={() => navigate('/scan')}
-  >
-    Scan Crop
-  </button>
-
-  <button
-    className="ghost"
-    onClick={() => navigate('/risk')}
-  >
-    Check Risk
-  </button>
-
-  <button
-    className="ghost"
-    onClick={() => navigate('/map')}
-  >
-    View Map
-  </button>
-
-  <button
-    className="ghost"
-    onClick={() => navigate('/dashboard')}
-  >
-    Open Dashboard
-  </button>
-</div>
-          <p className="muted small">{t('home.disclaimer')}</p>
-
-          <div className="inline">
+          <div className="inline home-location-action">
             <button className="ghost small" onClick={locate} disabled={locating}>
               {locating ? t('field.locating') : t('home.locate')}
             </button>

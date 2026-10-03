@@ -1,4 +1,4 @@
-# CropGuard
+# TerraSense AI
 
 **Smart India Hackathon 2026**
 
@@ -17,7 +17,7 @@
 
 ---
 
-CropGuard is a proactive, offline-capable crop-health platform for farmers and agricultural
+TerraSense AI is a proactive, offline-capable crop-health platform for farmers and agricultural
 officers, focused on **potato**, with an in-development research lab for autonomous field
 robotics. It pairs on-device camera scanning with weather-driven forecasting, safety-gated
 multilingual advisories, cross-farm outbreak intelligence, and a geospatial dashboard.
@@ -90,7 +90,7 @@ from field confirmations; and provide dashboards for agriculture officials.
 
 ## 2. The solution
 
-CropGuard delivers a closed loop: **Forecast → Triage → Detect → Verify → Monitor → Learn.**
+TerraSense AI delivers a closed loop: **Forecast → Triage → Detect → Verify → Monitor → Learn.**
 
 ### For farmers
 
@@ -302,7 +302,7 @@ backfill that the response reports explicitly.
 
 ## 7. Architecture
 
-![CropGuard architecture overview: farmers and officers, React frontend, FastAPI backend, safety triage and domain services, weather + RAG advisories, CropRow labs, database](docs/images/architecture_overview.jpg)
+![TerraSense AI architecture overview: farmers and officers, React frontend, FastAPI backend, safety triage and domain services, weather + RAG advisories, CropRow labs, database](docs/images/architecture_overview.jpg)
 
 The detailed view below is the **web deployment**. The Android app answers the same `/api/...` calls from an
 in-process Dart server instead, and never calls this backend; its only network edge is a
@@ -585,7 +585,7 @@ in the same pass.
 
 ## 11. Competitive advantages
 
-- **Precaution is better than cure.** Most crop tools react after damage shows. CropGuard
+- **Precaution is better than cure.** Most crop tools react after damage shows. TerraSense AI
   reads the weather building up around a field using published agronomic models — Smith,
   Beaumont, TOMCAST — and warns days before the first spot appears on a leaf. The alert is
   not a black box: every model that fired and every reason behind the score is shown in plain
@@ -770,7 +770,7 @@ upgrade components from their documented fallbacks to live data.
 
 ## 17. Revenue model
 
-CropGuard is built strictly as a **public good** for India under the
+TerraSense AI is built strictly as a **public good** for India under the
 Smart India Hackathon. There is no subscription, no marketplace and no monetization model.
 The design goal is the opposite: minimise operating cost — free APIs, on-device inference, no
 per-request LLM calls — so the platform can be run at state scale on a public budget while the
@@ -785,14 +785,12 @@ value accrues to farmers.
 | Product | Reach | Limitation |
 |---|---|---|
 | **Plantix** (global benchmark) | 10 M+ downloads, ~8 M annual active users, 26,000+ daily scans, 30 crops, 780+ diseases | Strictly reactive (detects after tissue is dead), cloud-dependent, no canopy sensing, no pre-symptom forecasting |
-| **MahaVISTAAR AI** (Maharashtra state voice AI) | 2.5 M+ farmers, 20,000+ daily queries, 19 languages/dialects, works without a smartphone | Conversational only — no computer vision, no row tracking, no localized spread modelling |
 | **BharatAgri / AgroStar** (commercial advisory & e-commerce) | 5.5 M+ and 10 M+ downloads | Revenue is tied to selling agrochemicals — an inherent incentive to prescribe sprays over IPM |
 | **Agrio** (precision agriculture) | ~800,000 global users, satellite NDVI + macro spore models | Expensive enterprise tier, bandwidth-hungry, complex UX, no Indian dialect support, no on-device canopy sensing |
-| **CROPSAP Maharashtra** (legacy state surveillance) | Statewide, field scouts logging trap counts manually | Heavy human dependency, slow turnaround, village-level advisories rather than farm-level guidance |
 
 ### 18.2 Feature comparison
 
-| Feature | CropGuard | Plantix | Agrio | AgroStar / BharatAgri | MahaVISTAAR / CROPSAP |
+| Feature | TerraSense AI | Plantix | Agrio | AgroStar / BharatAgri | public extension services |
 |---|---|---|---|---|---|
 | **First screen** | "Should I walk my field today?" traffic light | Blank camera / upload form | Field polygon / satellite map | E-commerce banner / chat feed | Voice prompt / text bulletin |
 | **Operational paradigm** | Pre-symptomatic forecast + real-time video consensus | Reactive still photo | Macro-satellite forecast + reactive photos | Reactive photo upload | Periodic manual scout reports |
@@ -814,8 +812,7 @@ own measurements):
 - **Adoption.** Roughly 10-15% of smartphone-owning Indian farmers actively use an
   agriculture-specific app; ~70% of educated farmers own a smartphone, with the remainder
   getting farming information via WhatsApp groups and YouTube. India leads digital
-  onboarding under the MahaAgri-AI Policy (2025-2029), and MahaVISTAAR AI has onboarded 3 M+
-  farmers, with AgriStack generating millions of land-verified IDs in the state.
+  digital agriculture programs are expanding access to farm information and land records.
 - **Productivity.** Precision-agriculture and AI advisory tools are associated with a 15-30%
   average yield increase (up to ~40% in localized sugarcane and horticulture
   pilots), 15-25% lower input costs, and 20-35% income uplift when paired with market linkage.
@@ -824,7 +821,7 @@ own measurements):
   and pest early-warning systems prevent an estimated 10-15% of output loss during erratic
   climate events.
 
-CropGuard targets the first and last of these directly: pre-symptomatic warning to prevent
+TerraSense AI targets the first and last of these directly: pre-symptomatic warning to prevent
 harvest loss, and safety-gated advisories to cut unnecessary chemical input.
 
 ---

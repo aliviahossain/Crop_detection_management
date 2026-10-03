@@ -51,8 +51,10 @@ function TopBar({ onMenu, onHelp }) {
         {t('menu.open')}
       </button>
       <div className="brand">
-        <strong>{t('app.title')}</strong>
-        <span>{t('app.subtitle')}</span>
+        <div className="brand-copy">
+          <strong>{t('app.title')}</strong>
+          <span>{t('app.subtitle')}</span>
+        </div>
       </div>
       <button
         className="help-btn"
