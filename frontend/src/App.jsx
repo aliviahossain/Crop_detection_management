@@ -51,11 +51,7 @@ function TopBar({ onMenu, onHelp }) {
         {t('menu.open')}
       </button>
       <div className="brand">
-        <img className="brand-mark" src="/terrasense-mark.png" alt="" aria-hidden="true" />
-        <div className="brand-copy">
-          <strong>{t('app.title')}</strong>
-          <span>{t('app.subtitle')}</span>
-        </div>
+        <img className="brand-logo" src="/TerraSenseAIlogo.jpeg" alt={`${t('app.title')} ${t('app.subtitle')}`} />
       </div>
       <button
         className="help-btn"

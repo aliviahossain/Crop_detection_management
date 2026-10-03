@@ -50,7 +50,7 @@ h1, h2, h3 { line-height: 1.25; }
   z-index: 40;
   background: var(--surface);
   color: var(--ink);
-  padding: 12px max(18px, calc((100vw - 1180px) / 2));
+  padding: 7px max(18px, calc((100vw - 1180px) / 2));
   display: flex;
   align-items: center;
   gap: 12px;
@@ -76,34 +76,18 @@ h1, h2, h3 { line-height: 1.25; }
 .menu-btn .bars { display: inline-flex; flex-direction: column; gap: 4px; }
 .menu-btn .bars i { width: 18px; height: 2px; background: var(--brand); border-radius: 2px; }
 
-.brand { display: flex; align-items: center; gap: 12px; line-height: 1.25; min-width: 0; }
-.brand-mark {
+.brand { display: flex; align-items: center; line-height: 1.25; min-width: 0; }
+.brand-logo {
   display: block;
-  width: 52px;
-  height: 52px;
+  width: 112px;
+  height: 85px;
   flex: none;
-  object-fit: cover;
-  border-radius: 12px;
-  box-shadow: 0 2px 7px rgba(33, 78, 104, 0.16);
-}
-.brand-copy { display: flex; flex-direction: column; min-width: 0; }
-.brand strong { color: var(--brand-dark); font-size: 20px; font-weight: 700; letter-spacing: -0.025em; white-space: nowrap; }
-.brand span {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.4;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  object-fit: contain;
 }
 @media (max-width: 380px) {
-  .topbar { gap: 8px; padding: 8px 9px; }
+  .topbar { gap: 8px; padding: 7px 9px; }
   .menu-btn { gap: 6px; padding-inline: 9px; }
-  .brand { gap: 8px; }
-  .brand-mark { width: 42px; height: 42px; border-radius: 10px; }
-  .brand strong { font-size: 16px; }
-  .brand span { display: none; }
+  .brand-logo { width: 96px; height: 73px; }
 }
 .help-btn {
   margin-left: auto;
