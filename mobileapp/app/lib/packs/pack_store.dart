@@ -39,7 +39,7 @@ const String kPackCatalogBase = String.fromEnvironment(
 
 /// This app build. A pack declaring a higher `min_app_version` is listed but
 /// refused, rather than installed and then misread.
-const String kAppVersion = '1.0.0';
+const String kAppVersion = '1.0.1';
 
 class PackException implements Exception {
   PackException(this.message);

@@ -39,11 +39,11 @@ calls in both worlds; only the thing answering them changes.
 │                                                              │ verify_pub-│   manifest.json        SHA-256 per file,     │
 │ frontend/ ── stage_web.ps1 ──► app/assets/web/               │ lished_    │                        min_app_version       │
 │ export_demo_dataset.py ──────► app/assets/demo/              │ packs.py   │   model.onnx           weights               │
-│ flutter build apk ───────────► terrasense-ai.apk                 │            │   thresholds.json      tuned for weights     │
+│ flutter build apk ───────────► cropguard.apk                      │            │   thresholds.json      tuned for weights     │
 │                                                              │─ apk ────► │   taxonomy.json        class order           │
 │ [N19] GOLDEN FIXTURES  mobileapp/fixtures/*.json             │            │   strings.json         4 languages           │
 │   Python services ⇄ Dart port, 108 cases                     │            │   kb/*.md              advisory pages        │
-│   export_fixtures.py --check  (CI)                           │            │ terrasense-ai.apk (54 MB) + index.html           │
+│   export_fixtures.py --check  (CI)                           │            │ cropguard.apk (54 MB) + index.html               │
 └──────────────────────────────────────────────────────────────┘            └──────────────────────────────────────────────┘
                                                                               ║ ① first launch only: index.json, then the pack
                                                                               ▼
@@ -289,7 +289,7 @@ upload.
 | A file whose bytes fail its SHA-256 | installs nothing |
 | A truncated body | installs nothing |
 | Manifest describing a different crop/version than the catalogue offered | *"Refusing to install."* |
-| `min_app_version` above this build (`kAppVersion = 1.0.0`) | *"Update the app first."* |
+| `min_app_version` above this build (`kAppVersion = 1.0.1`) | *"Update the app first."* |
 | Version ordering is numeric, not lexical | `1.0.10` > `1.0.9` |
 | Rollback to an older version | rolls back rather than keeping the newer |
 | An unparseable manifest already on disk | left for forensics, never half-served |
@@ -564,7 +564,7 @@ A failing `--check` is **read, not regenerated away**.
 1. **Web UI:** `frontend/` → `stage_web.ps1` (vite build) → `mobileapp/app/assets/web/`.
 2. **Demo data:** `export_demo_dataset.py` → `mobileapp/app/assets/demo/`.
 3. **APK:** `flutter build apk --release --dart-define=PACK_CATALOG_BASE=…` →
-   `dist/terrasense-ai.apk` (54 MB), `dist/terrasense-ai.apk.sha256`, `dist/index.html` (install page).
+  `gh-pages/cropguard.apk` (54 MB), `gh-pages/cropguard.apk.sha256`, `gh-pages/index.html` (install page).
 4. **Models:** `ml/`, `croprow/`, `croprow_disease/` — YOLOv8 training on Kaggle GPU →
    `export_onnx.py` → `tune_thresholds.py`.
 5. **Packs:** `build_pack.py` (UTF-8, LF **always**) → `dist/packs/**` →
@@ -577,7 +577,7 @@ A failing `--check` is **read, not regenerated away**.
 
 | Component | Size |
 |---|---|
-| Published APK | 56,098,065 B (53.5 MiB) |
+| Published APK | 56,427,303 B (53.8 MiB) |
 | ├─ ORT wasm runtime **×2** | 27.9 MB |
 | ├─ UI bundle (`index-*.js` + `.css`) | ~1.0 MB |
 | ├─ demo dataset | 293 KB |
@@ -602,8 +602,8 @@ thing.
 |---|---|
 | Application ID / namespace | `in.cropguard.cropguard` |
 | Label | TerraSense AI |
-| Version | `1.0.0+1` → `versionName 1.0.0`, `versionCode 1` |
-| `kAppVersion` (pack gate) | `1.0.0` — keep in step with pubspec |
+| Version | `1.0.1+2` → `versionName 1.0.1`, `versionCode 2` |
+| `kAppVersion` (pack gate) | `1.0.1` — keep in step with pubspec |
 | Java / Kotlin target | 17 |
 | Toolchain | Flutter 3.47.4 · Dart 3.13.3 · Gradle 9.3.1 |
 

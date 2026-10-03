@@ -183,6 +183,27 @@ void main() {
     });
   });
 
+  group('farmer home alert', () {
+    test('overview returns an offline weather alert with demo/live mode',
+        () async {
+      final demo = await get(
+          '/home/overview?latitude=19.0009&longitude=73.9403&include_demo=true');
+      expect(demo['status'], anyOf('calm', 'watch', 'act'));
+      expect(demo['offline'], isTrue);
+      expect(demo['include_demo'], isTrue);
+      expect(demo['weather']['synthetic'], isTrue);
+      expect(demo['nearby']['confirmed_count'], isA<int>());
+      expect(demo['prevalent']['total_reported'], isA<int>());
+
+      final live = await get(
+          '/home/overview?latitude=19.0009&longitude=73.9403&include_demo=false');
+      expect(live['status'], anyOf('calm', 'watch', 'act'));
+      expect(live['include_demo'], isFalse);
+      expect(live['nearby']['confirmed_count'], 0);
+      expect(live['prevalent']['total_reported'], 0);
+    });
+  });
+
   group('crop packs', () {
     test('/packs/installed reports an empty install, not an error', () async {
       // No pack in a unit-test environment; the endpoint must still answer in

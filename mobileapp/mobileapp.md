@@ -287,7 +287,7 @@ bucket or a wrong upload.
 | A file whose bytes fail its SHA-256 | "refuses a pack whose file fails its checksum, and installs nothing" |
 | A truncated body | same suite |
 | Manifest describing a different crop/version than the catalogue offered | `Refusing to install.` |
-| `min_app_version` above this build (`kAppVersion = 1.0.0`) | "Update the app first." |
+| `min_app_version` above this build (`kAppVersion = 1.0.1`) | "Update the app first." |
 | Version ordering (`1.0.10` > `1.0.9`) | "compareVersions orders numerically, not lexically" |
 | Rollback to an older version | "installing an older version rolls back rather than keeping the newer" |
 | An unparseable manifest already on disk | left for forensics, never half-served |
@@ -660,8 +660,8 @@ screens deep.
 |---|---|
 | Application ID | `in.cropguard.cropguard` |
 | Label | TerraSense AI |
-| Version | `1.0.0+1` (pubspec) → `versionName 1.0.0`, `versionCode 1` |
-| `kAppVersion` (pack gate) | `1.0.0` — keep in step with pubspec |
+| Version | `1.0.1+2` (pubspec) → `versionName 1.0.1`, `versionCode 2` |
+| `kAppVersion` (pack gate) | `1.0.1` — keep in step with pubspec |
 | Namespace | `in.cropguard.cropguard` |
 | Java / Kotlin target | 17 |
 | compileSdk / minSdk / targetSdk | Flutter defaults (`flutter.*`) |
@@ -697,7 +697,7 @@ The APK lands at `mobileapp/app/build/app/outputs/flutter-apk/app-release.apk`.
 
 | Component | Size |
 |---|---|
-| Published APK | 56,098,065 B (53.5 MiB, "54 MB" on the install page) |
+| Published APK | 56,427,303 B (53.8 MiB, "54 MB" on the install page) |
 | ├─ ORT wasm runtime ×2 | 27.9 MB |
 | ├─ UI bundle (`index-*.js` + `.css`) | ~1.0 MB |
 | ├─ demo dataset | 293 KB |
@@ -726,10 +726,10 @@ to the `gh-pages` branch, served at
 <https://aliviahossain.github.io/Crop_detection_management/>:
 
 ```
-dist/index.html            the landing/install page (dark-mode aware)
-dist/terrasense-ai.apk         the build
-dist/terrasense-ai.apk.sha256  e1c3663d…c84cd32
-dist/packs/**              the catalogue and the packs
+index.html                    the landing/install page (dark-mode aware)
+cropguard.apk                 version 1.0.1+2
+cropguard.apk.sha256          b67a7007…fece65f
+packs/**                      the catalogue and the packs
 report/                    the project report page + PDF (on gh-pages only)
 ```
 
