@@ -13,7 +13,7 @@ const double kEarthRadiusKm = 6371.0;
 /// Grid-cell id for a coordinate, or null if either axis is missing.
 ///
 /// Uses floor, not truncation. `(-1.02 / 0.05).toInt()` is -20 in Dart but
-/// Python's `math.floor` gives -21; every coordinate in Maharashtra is
+/// Python's `math.floor` gives -21; every coordinate in India is
 /// positive so a truncating port passes every manual test and silently
 /// mis-buckets the moment the app is used south of the equator or west of
 /// Greenwich.

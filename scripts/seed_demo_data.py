@@ -2,7 +2,7 @@
 
 The hotspot map and officer dashboard are only meaningful with a body of cases
 behind them, and real field reports accumulate over months. This generates a
-plausible month of activity across Maharashtra potato districts -- including
+plausible month of activity across potato-growing districts in India -- including
 expert reviews, follow-up outcomes and trap readings -- so the whole system can
 be demonstrated end to end on day one.
 
@@ -23,7 +23,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "backend"))
 
-# Real potato-growing pockets in Maharashtra, with approximate coordinates.
+# Representative potato-growing locations, with approximate coordinates.
 LOCATIONS = [
     ("Pune", "Manchar", 19.0009, 73.9403),
     ("Pune", "Ambegaon", 19.1180, 73.7350),

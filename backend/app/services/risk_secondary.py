@@ -3,8 +3,8 @@
 This is deliberately *additive refinement*, exactly as scoped in the brief. The
 deterministic models in `risk_models.py` are the foundation and always run. If
 and only if a trained artifact exists at `ml/weights/risk_xgb.json` -- produced
-by `ml/train_risk_xgb.py` from real historical surveillance data (CROPSAP
-Maharashtra bulletins, ICAR/NCIPM records) -- this layer nudges the rule-based
+by `ml/train_risk_xgb.py` from real historical surveillance data (public crop surveillance
+India bulletins, ICAR/NCIPM records) -- this layer nudges the rule-based
 score and explains the nudge with SHAP values.
 
 With no artifact present the layer is a documented no-op. Nothing downstream

@@ -1,7 +1,6 @@
-# CropGuard Maharashtra — Project Overview
+# TerraSense AI — Project Overview
 
 **Smart India Hackathon 2026 · Problem Statement PS26131 — Crop Disease & Pest Detection System**
-Government of Maharashtra · Maharashtra State Innovation Society (Dept. of Skills, Employment, Entrepreneurship and Innovation)
 **Category:** Software · **Theme:** Agriculture, FoodTech & Rural Development
 
 > A proactive, offline-capable crop-health platform for farmers and agricultural officers, currently focused on **potato**. It pairs on-device camera scanning with weather-driven disease forecasting, safety-gated multilingual advisories, and a geospatial dashboard for officials.
@@ -29,7 +28,7 @@ Government of Maharashtra · Maharashtra State Innovation Society (Dept. of Skil
 
 ## 2. Solution
 
-CropGuard Maharashtra is a proactive crop-health platform for farmers and agricultural officers, currently focused on potatoes. It delivers the full loop the problem statement asks for — detect, forecast, advise, verify, and follow up — with every required capability implemented and traceable to code (see [`docs/PS_TRACEABILITY.md`](docs/PS_TRACEABILITY.md)).
+TerraSense AI is a proactive crop-health platform for farmers and agricultural officers, currently focused on potatoes. It delivers the full loop the problem statement asks for — detect, forecast, advise, verify, and follow up — with every required capability implemented and traceable to code (see [`docs/PS_TRACEABILITY.md`](docs/PS_TRACEABILITY.md)).
 
 **For farmers**
 
@@ -245,7 +244,7 @@ Lab-only validation is retained at **mAP50 0.995** — confirming the fine-tune 
 
 **Intelligence and forecasting**
 
-- **Activate the XGBoost + SHAP risk layer** once enough real Indian outbreak data accrues (from CROPSAP Maharashtra bulletins, ICAR/NCIPM records, or the system's own confirmed cases). `scripts/export_risk_dataset.py` already builds a leakage-safe training set from confirmed cases; the layer is capped at ±0.20 so it can refine but never override a validated agronomic rule.
+- **Activate the XGBoost + SHAP risk layer** once enough real Indian outbreak data accrues (from public surveillance bulletins, ICAR/NCIPM records, or the system's own confirmed cases). `scripts/export_risk_dataset.py` already builds a leakage-safe training set from confirmed cases; the layer is capped at ±0.20 so it can refine but never override a validated agronomic rule.
 - **Real weather history.** Backfill the Smith Period window from a paid or archival weather source instead of the system's own accumulating cache.
 
 **Platform and reach**
@@ -274,7 +273,7 @@ Stating these is part of the design, not an omission.
 
 ## 13. Resources and References
 
-- Built to solve the Government of Maharashtra's Smart India Hackathon **Problem Statement 26131**.
+- Built to solve the Smart India Hackathon **Problem Statement 26131**.
 - Leverages the **PlantVillage** and **PlantDoc** image datasets.
 - Relies on proven agronomic formulas — the **Smith Period**, **Beaumont Period**, **TOMCAST**, and **degree-day** models.
 - Full project report (PDF): [project site](https://aliviahossain.github.io/Crop_detection_management/report/).
@@ -284,6 +283,6 @@ Stating these is part of the design, not an omission.
 
 ## 14. Revenue System
 
-- Designed as a **public good** for the Government of Maharashtra for the Smart India Hackathon.
+- Designed as a **public good** for the Smart India Hackathon.
 - Features **no commercial subscription or monetization model**.
 - Focuses entirely on **minimizing operational costs** (free APIs and offline tools) while generating value by saving crops and optimizing farmer pesticide spending.

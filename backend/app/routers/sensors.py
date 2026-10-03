@@ -1,7 +1,7 @@
 """/sensors -- pest-trap and field-sensor ingestion.
 
 Kept deliberately schema-light so a low-cost ESP32 trap counter, a manual entry
-by a Krishi Sahayak, or a bulk CSV upload from a CROPSAP surveyor all use the
+by a Krishi Sahayak, or a bulk CSV upload from a field surveyor all use the
 same endpoint. Readings feed straight into the pest side of the risk engine.
 """
 from __future__ import annotations

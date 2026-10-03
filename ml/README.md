@@ -171,8 +171,8 @@ as field accuracy.
 ## Secondary risk layer
 
 `train_risk_xgb.py` exists but ships no model, on purpose. It needs historical
-rows linking weather and field context to confirmed outbreaks — CROPSAP
-Maharashtra bulletins, ICAR/NCIPM records, or this system's own confirmed cases
+rows linking weather and field context to confirmed outbreaks — public crop surveillance
+India bulletins, ICAR/NCIPM records, or this system's own confirmed cases
 once enough exist. It refuses to train below 200 rows and refuses to save a
 model below 0.6 AUC, because a model fitted on 30 rows would look like machine
 learning and behave like noise.

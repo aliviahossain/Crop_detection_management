@@ -2,7 +2,7 @@
 
 Why this suite exists at all, given the functions are four lines each:
 `geo_cell` uses `math.floor`, and Dart's `~/` and `int` conversions truncate
-toward zero instead. Every coordinate in Maharashtra is positive, so a
+toward zero instead. Every coordinate in India is positive, so a
 truncating port would pass every manual test and silently mis-bucket the
 southern or western hemisphere the moment the app is used outside India.
 That is exactly the class of bug a fixture suite is for.
@@ -15,7 +15,7 @@ SOURCE = "backend/app/services/geo.py"
 
 # (name, why, lat, lon, size_deg or None for default)
 CELL_CASES = [
-    ("pune_default_cell", "A real Maharashtra coordinate at the default 0.05 deg grid.", 18.5204, 73.8567, None),
+    ("pune_default_cell", "A real geographic coordinate at the default 0.05 deg grid.", 18.5204, 73.8567, None),
     ("nashik_default_cell", "Second district, to prove cells differ where they should.", 19.9975, 73.7898, None),
     ("exact_grid_boundary", "Lat lands exactly on a cell edge - floor must not round up.", 18.50, 73.85, None),
     ("negative_lat_southern", "Negative latitude: floor(-1.02/0.05) is -21, truncation gives -20.", -1.02, 36.82, None),

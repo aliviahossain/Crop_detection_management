@@ -7,10 +7,10 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cropguard/domain/risk_models.dart';
-import 'package:cropguard/domain/taxonomy.dart';
-import 'package:cropguard/domain/triage.dart';
-import 'package:cropguard/domain/weather.dart';
+import 'package:terrasense_ai/domain/risk_models.dart';
+import 'package:terrasense_ai/domain/taxonomy.dart';
+import 'package:terrasense_ai/domain/triage.dart';
+import 'package:terrasense_ai/domain/weather.dart';
 
 // Manchar, Pune - the demo location the web app opens on.
 const double kLat = 18.9282;

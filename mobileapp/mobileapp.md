@@ -1,4 +1,4 @@
-# CropGuard Mobile — implementation reference
+# TerraSense AI Mobile — implementation reference
 
 Android app for the farmer. The whole farmer loop — **weather risk forecast →
 photo → diagnosis → triage → treatment advice → follow-up** — runs on the
@@ -33,7 +33,7 @@ layers inside one Android process:
 │   • WebView host, camera permission, file-chooser bridge     │
 │   • first-launch crop picker (the one online screen)         │
 ├──────────────────────────────────────────────────────────────┤
-│ WebView — the CropGuard React UI, bundled into the APK       │
+│ WebView — the TerraSense AI React UI, bundled into the APK       │
 │   • loads from http://127.0.0.1:<os-assigned-port>           │
 │   • runs onnxruntime-web: photo AND live inference in-page   │
 ├──────────────────────────────────────────────────────────────┤
@@ -538,7 +538,7 @@ python mobileapp/tools/export_demo_dataset.py --check   # CI guard
 ```
 
 Writes `app/assets/demo/dataset.json` — 300,440 bytes, seed 2026, 90-day
-window: **120 cases, 120 follow-ups, 520 trap readings** across the Maharashtra
+window: **120 cases, 120 follow-ups, 520 trap readings** across potato-growing districts
 potato districts. The app derives the dashboard, the hotspot cells, the review
 queue and the follow-up statistics from those rows, so the period selector and
 the district filter genuinely filter rather than moving four fixed numbers.
@@ -659,7 +659,7 @@ screens deep.
 | | |
 |---|---|
 | Application ID | `in.cropguard.cropguard` |
-| Label | CropGuard |
+| Label | TerraSense AI |
 | Version | `1.0.0+1` (pubspec) → `versionName 1.0.0`, `versionCode 1` |
 | `kAppVersion` (pack gate) | `1.0.0` — keep in step with pubspec |
 | Namespace | `in.cropguard.cropguard` |
@@ -727,8 +727,8 @@ to the `gh-pages` branch, served at
 
 ```
 dist/index.html            the landing/install page (dark-mode aware)
-dist/cropguard.apk         the build
-dist/cropguard.apk.sha256  e1c3663d…c84cd32
+dist/terrasense-ai.apk         the build
+dist/terrasense-ai.apk.sha256  e1c3663d…c84cd32
 dist/packs/**              the catalogue and the packs
 report/                    the project report page + PDF (on gh-pages only)
 ```
@@ -814,9 +814,9 @@ answer visible and keep Dart and Python agreeing on whatever is decided.
 | Symptom | Cause | Fix |
 |---|---|---|
 | "Could not get the crop list" | Catalogue URL unreachable — usually the non-existent default bucket | Menu → Crop models → set the URL, or rebuild with `--dart-define=PACK_CATALOG_BASE` |
-| White screen after splash | JS error in the bundled UI | `adb logcat -s flutter` — console is forwarded; look for `[cropguard][web]` |
-| "CropGuard could not start" | The loopback server failed to bind | `adb logcat` for `[cropguard] server failed to start`. Not a network problem — the pane says so |
-| Photo picker / video upload does nothing | `setOnShowFileSelector` not wired, or the picker threw | Check `[cropguard] file selector failed` in logcat |
+| White screen after splash | JS error in the bundled UI | `adb logcat -s flutter` — console is forwarded; look for `[terrasense][web]` |
+| "TerraSense AI could not start" | The loopback server failed to bind | `adb logcat` for `[terrasense] server failed to start`. Not a network problem — the pane says so |
+| Photo picker / video upload does nothing | `setOnShowFileSelector` not wired, or the picker threw | Check `[terrasense] file selector failed` in logcat |
 | `ERR_CLEARTEXT_NOT_PERMITTED` | `network_security_config.xml` missing or not referenced from the manifest | Both must be present; loopback only |
 | Release build loads nothing, silently | `INTERNET` missing from `src/main/AndroidManifest.xml` | Flutter only adds it for debug/profile |
 | "no available backend found" at session creation | A `*jsep*` ORT file was deleted, or `assets/web/ort/` is missing from `pubspec.yaml` | Re-run `stage_web.ps1`; check the asset list |

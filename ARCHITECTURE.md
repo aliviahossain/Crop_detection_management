@@ -1,4 +1,4 @@
-# CropGuard — Architecture
+# TerraSense AI — Architecture
 
 A map of the whole system, weighted toward the **mobile app**. **§1 is the one
 architecture diagram** — everything is in it. The sections after it are the
@@ -12,7 +12,7 @@ detail behind each box, as text and tables.
 
 ## 0. One paragraph
 
-CropGuard is a potato crop disease and pest system for Maharashtra farmers and
+TerraSense AI is a potato crop disease and pest system for farmers in India and
 agriculture officers. It ships as **two deployments of one codebase**:
 
 | | **Web deployment** | **Mobile deployment** |
@@ -39,11 +39,11 @@ calls in both worlds; only the thing answering them changes.
 │                                                              │ verify_pub-│   manifest.json        SHA-256 per file,     │
 │ frontend/ ── stage_web.ps1 ──► app/assets/web/               │ lished_    │                        min_app_version       │
 │ export_demo_dataset.py ──────► app/assets/demo/              │ packs.py   │   model.onnx           weights               │
-│ flutter build apk ───────────► cropguard.apk                 │            │   thresholds.json      tuned for weights     │
+│ flutter build apk ───────────► terrasense-ai.apk                 │            │   thresholds.json      tuned for weights     │
 │                                                              │─ apk ────► │   taxonomy.json        class order           │
 │ [N19] GOLDEN FIXTURES  mobileapp/fixtures/*.json             │            │   strings.json         4 languages           │
 │   Python services ⇄ Dart port, 108 cases                     │            │   kb/*.md              advisory pages        │
-│   export_fixtures.py --check  (CI)                           │            │ cropguard.apk (54 MB) + index.html           │
+│   export_fixtures.py --check  (CI)                           │            │ terrasense-ai.apk (54 MB) + index.html           │
 └──────────────────────────────────────────────────────────────┘            └──────────────────────────────────────────────┘
                                                                               ║ ① first launch only: index.json, then the pack
                                                                               ▼
@@ -165,7 +165,7 @@ The only network hop is L1's crop picker → static bucket over HTTPS, on first 
 5. `controller.loadRequest(origin)` — the WebView loads `http://127.0.0.1:<port>`.
 6. The page calls `GET /api/detect/status` **once** at startup — which is why step 3 must happen **before** step 5: a pack installed after load leaves the scanner convinced there is no detector.
 
-Failure at step 2 renders `_ErrorPane` — *"CropGuard could not start"* — which
+Failure at step 2 renders `_ErrorPane` — *"TerraSense AI could not start"* — which
 states explicitly that this is **not** a network problem.
 
 ---
@@ -471,7 +471,7 @@ to catch a hallucinated dose.
 ## 10. Demo data on the handset
 
 `app/assets/demo/dataset.json` — 293 KB, seed 2026, 90-day window:
-**120 cases · 120 follow-ups · 520 trap readings** across Maharashtra potato
+**120 cases · 120 follow-ups · 520 trap readings** across potato-growing regions of India
 districts. The app derives the dashboard, hotspot cells, review queue and
 follow-up statistics from those rows, so the period selector and district filter
 genuinely filter rather than moving four fixed numbers.
@@ -564,7 +564,7 @@ A failing `--check` is **read, not regenerated away**.
 1. **Web UI:** `frontend/` → `stage_web.ps1` (vite build) → `mobileapp/app/assets/web/`.
 2. **Demo data:** `export_demo_dataset.py` → `mobileapp/app/assets/demo/`.
 3. **APK:** `flutter build apk --release --dart-define=PACK_CATALOG_BASE=…` →
-   `dist/cropguard.apk` (54 MB), `dist/cropguard.apk.sha256`, `dist/index.html` (install page).
+   `dist/terrasense-ai.apk` (54 MB), `dist/terrasense-ai.apk.sha256`, `dist/index.html` (install page).
 4. **Models:** `ml/`, `croprow/`, `croprow_disease/` — YOLOv8 training on Kaggle GPU →
    `export_onnx.py` → `tune_thresholds.py`.
 5. **Packs:** `build_pack.py` (UTF-8, LF **always**) → `dist/packs/**` →
@@ -601,7 +601,7 @@ thing.
 | | |
 |---|---|
 | Application ID / namespace | `in.cropguard.cropguard` |
-| Label | CropGuard |
+| Label | TerraSense AI |
 | Version | `1.0.0+1` → `versionName 1.0.0`, `versionCode 1` |
 | `kAppVersion` (pack gate) | `1.0.0` — keep in step with pubspec |
 | Java / Kotlin target | 17 |

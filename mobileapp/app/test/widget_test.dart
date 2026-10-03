@@ -4,7 +4,7 @@
 //
 // The domain logic these will eventually sit on top of is tested against the
 // golden vectors in mobileapp/fixtures, not here.
-// Note: `CropGuardApp` itself cannot be pumped here. Its home builds a
+// Note: `TerraSenseApp` itself cannot be pumped here. Its home builds a
 // WebViewController in initState, and `WebViewPlatform.instance` is null
 // under the test harness. Faking the entire WebView platform to assert a
 // title would be a lot of scaffolding for a shell that is scheduled for
@@ -47,7 +47,7 @@ class _LoadingHarness extends StatelessWidget {
         children: [
           const CircularProgressIndicator(),
           const SizedBox(height: 28),
-          const Text('CropGuard'),
+          const Text('TerraSense AI'),
           const SizedBox(height: 10),
           AnimatedOpacity(
             opacity: slow ? 1 : 0,

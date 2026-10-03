@@ -17,7 +17,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cropguard/local_server.dart';
+import 'package:terrasense_ai/local_server.dart';
 
 void main() {
   late LocalServer server;

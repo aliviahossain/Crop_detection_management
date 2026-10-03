@@ -16,7 +16,7 @@ from app.services.translate import normalise_language
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 
-@router.post("", response_model=ChatResponse, summary="Ask the CropGuard assistant")
+@router.post("", response_model=ChatResponse, summary="Ask the TerraSense AI assistant")
 def chat(req: ChatRequest) -> ChatResponse:
     lang = normalise_language(req.language)
     reply, live = chat_service.answer(

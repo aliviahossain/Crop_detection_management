@@ -1,4 +1,4 @@
-name: cropguard
+name: terrasense_ai
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -77,7 +77,7 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # The CropGuard web UI, bundled into the APK and served by LocalServer on
+  # The TerraSense AI web UI, bundled into the APK and served by LocalServer on
   # 127.0.0.1. This is what makes the app work with no network.
   #
   # Generated from frontend/dist by tools/stage_web.ps1 and gitignored - it is
@@ -86,6 +86,7 @@ flutter:
   #
   # Flutter does not recurse into subdirectories, so each one is listed.
   assets:
+    - assets/terrasense-mark.png
     - assets/web/
     - assets/web/assets/
     - assets/web/ort/

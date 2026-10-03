@@ -15,8 +15,8 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cropguard/packs/pack.dart';
-import 'package:cropguard/packs/pack_store.dart';
+import 'package:terrasense_ai/packs/pack.dart';
+import 'package:terrasense_ai/packs/pack_store.dart';
 
 /// Serves an in-memory pack, with hooks to corrupt exactly one file.
 class _FakeOrigin {

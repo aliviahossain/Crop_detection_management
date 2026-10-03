@@ -114,7 +114,7 @@ class _CropPickerPageState extends State<CropPickerPage> {
                       ?.copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               Text(
-                'CropGuard downloads one crop pack, once. After that, diagnosis '
+                'TerraSense AI downloads one crop pack, once. After that, diagnosis '
                 'and treatment advice work with no network at all.',
                 style: theme.textTheme.bodyMedium
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant),

@@ -8,14 +8,14 @@ severity: moderate
 sources:
   - ICAR-Central Potato Research Institute (CPRI), Shimla
   - ICAR-National Research Centre for Integrated Pest Management (NCIPM)
-  - CROPSAP Maharashtra pest surveillance guidance
+  - public surveillance pest surveillance guidance
 review_status: needs_local_validation
 ---
 
 # Potato Tuber Moth (*Phthorimaea operculella*)
 
 ## Why it matters
-The most damaging insect pest of potato in Maharashtra, in the field and
+The most damaging insect pest of potato in India, in the field and
 especially in storage. Larvae mine leaves and petioles, then bore into exposed
 tubers. Losses in poorly managed country stores can be very high.
 
@@ -81,6 +81,6 @@ crop degenerates and carries the loss into every field that plants it.
 
 ## When to escalate
 - Trap counts or aphid counts far above threshold across many fields - this is a
-  district-level outbreak and needs a coordinated CROPSAP-style response, not
+  district-level outbreak and needs a coordinated coordinated public response, not
   individual spraying.
 - Suspected virus symptoms in a seed crop - requires laboratory confirmation.

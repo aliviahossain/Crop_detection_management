@@ -129,7 +129,7 @@ def classes() -> dict:
         "scope_note": (
             "The deployed detector is trained on potato only, with three classes. Potato was "
             "chosen first because late blight is the textbook weather-driven epidemic that the "
-            "Smith Period model is defined for, it is a major Maharashtra rabi crop, and clean "
+            "Smith Period model is defined for, it is a widely grown rabi crop in India, and clean "
             "training imagery exists. Adding a crop is a dataset and retraining task, not an "
             "architecture change."
         ),

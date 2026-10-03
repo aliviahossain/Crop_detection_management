@@ -1,6 +1,6 @@
 /// The offline backend.
 ///
-/// Serves the bundled CropGuard UI and implements the `/api` surface it calls,
+/// Serves the bundled TerraSense AI UI and implements the `/api` surface it calls,
 /// entirely on `127.0.0.1` inside the app process. Nothing here touches the
 /// network, so the whole thing works in airplane mode.
 ///
@@ -26,6 +26,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/services.dart' show rootBundle;
 
@@ -230,7 +231,14 @@ class LocalServer {
         });
 
       case '/home/overview':
-        return _json(req, _overview(d('latitude') ?? 18.52, d('longitude') ?? 73.86));
+        return _json(
+          req,
+          await _overview(
+            d('latitude') ?? 18.52,
+            d('longitude') ?? 73.86,
+            includeDemo: _includeDemo(q),
+          ),
+        );
 
       case '/risk':
       case '/risk/':
@@ -1070,6 +1078,18 @@ class LocalServer {
   Map<String, dynamic> _risk(double lat, double lon) {
     final series = getSeries(lat: lat, lon: lon);
     final days = summariseDays(series.points);
+    final observed = series.points.where((point) => !point.isForecast).toList();
+    final recent = observed.length > 24
+        ? observed.sublist(observed.length - 24)
+        : observed;
+    final tempMean = recent.isEmpty
+        ? null
+        : recent.map((point) => point.tempC).reduce((a, b) => a + b) /
+            recent.length;
+    final humidityMean = recent.isEmpty
+        ? null
+        : recent.map((point) => point.humidity).reduce((a, b) => a + b) /
+            recent.length;
 
     final smith = smithPeriod(days);
     final beaumont = beaumontPeriod(series.points);
@@ -1118,6 +1138,8 @@ class LocalServer {
         'synthetic': series.synthetic,
         'real_hours': series.realHours,
         'total_hours': series.points.length,
+        'temp_mean_c': tempMean,
+        'humidity_mean': humidityMean,
         'warnings': series.warnings,
       },
       'offline': true,
@@ -1137,16 +1159,135 @@ class LocalServer {
     };
   }
 
-  /// The farmer's home traffic light.
-  ///
-  /// Weather half only. Cross-farm outbreak pressure needs other farmers'
-  /// confirmed cases, which this device does not have offline, so the alert is
-  /// driven purely by the agronomic models and says so.
-  Map<String, dynamic> _overview(double lat, double lon) {
+  /// The farmer's home overview. The offline build combines its weather risk
+  /// forecast with the bundled demo cases when the UI's demo switch is on.
+  Future<Map<String, dynamic>> _overview(
+    double lat,
+    double lon, {
+    required bool includeDemo,
+  }) async {
     final risk = _risk(lat, lon);
     final level = risk['overall_level'] as String;
-    final status = level == 'high' ? 'act' : (level == 'medium' ? 'watch' : 'calm');
     final display = risk['top_threat_display'];
+
+    // The app has no synced real field reports while running offline. Its
+    // optional demo records are clearly marked and use the same windows and
+    // radii as the online home overview.
+    final demoRows = includeDemo
+        ? (await _demoApi()).data.casesWithin(30)
+        : const <DemoCase>[];
+    final areaRows = <DemoCase>[];
+    final areaDistances = <DemoCase, double>{};
+    for (final row in demoRows) {
+      if (row.reviewStatus == 'rejected' ||
+          (row.effectiveClass != 'potato_late_blight' &&
+              row.effectiveClass != 'potato_early_blight')) {
+        continue;
+      }
+      final distance = haversineKm(lat, lon, row.latitude, row.longitude);
+      if (distance <= 15) {
+        areaRows.add(row);
+        areaDistances[row] = distance;
+      }
+    }
+
+    final nearbyRows = <DemoCase>[];
+    final nearbyDistances = <DemoCase, double>{};
+    for (final row in areaRows) {
+      final distance = areaDistances[row]!;
+      if (row.effectiveClass == 'potato_late_blight' && distance <= 5) {
+        nearbyRows.add(row);
+        nearbyDistances[row] = distance;
+      }
+    }
+    final confirmedNearby = nearbyRows
+        .where((row) => row.isReviewed)
+        .map((row) => nearbyDistances[row]!)
+        .toList();
+    final reportedNearby = nearbyRows.where((row) => !row.isReviewed).length;
+    final closeConfirmed = confirmedNearby.where((distance) => distance <= 2).length;
+    final pressure = confirmedNearby.isEmpty
+        ? 0.0
+        : math.min(
+            1.0,
+            confirmedNearby
+                    .map((distance) => math.exp(-math.pow(distance / 2, 2)))
+                    .fold<double>(0, (sum, weight) => sum + weight) /
+                3.0,
+          ).toDouble();
+    final nearbyLevel = confirmedNearby.isEmpty && reportedNearby == 0
+        ? 'none'
+        : confirmedNearby.isEmpty
+            ? 'low'
+            : pressure >= 0.5 || closeConfirmed >= 2
+                ? 'high'
+                : pressure >= 0.15 || closeConfirmed >= 1
+                    ? 'elevated'
+                    : 'low';
+    final nearestKm = confirmedNearby.isEmpty
+        ? null
+        : (confirmedNearby.reduce((a, b) => a < b ? a : b) * 10).round() / 10;
+    final nearby = {
+      'threat_key': 'potato_late_blight',
+      'threat_display': displayName('potato_late_blight'),
+      'confirmed_count': confirmedNearby.length,
+      'reported_count': reportedNearby,
+      'close_confirmed_count': closeConfirmed,
+      'nearest_km': nearestKm,
+      'villages': nearbyRows
+          .where((row) => row.isReviewed && row.village.isNotEmpty)
+          .map((row) => row.village)
+          .toSet()
+          .length,
+      'pressure': (pressure * 1000).round() / 1000,
+      'prior_shift': (pressure * 0.2 * 1000).round() / 1000,
+      'level': nearbyLevel,
+      'radius_km': 5.0,
+      'close_radius_km': 2.0,
+      'window_days': 30,
+      'summary': confirmedNearby.isNotEmpty
+          ? '${confirmedNearby.length} confirmed late blight case(s) within 5 km in the last 30 days.'
+          : reportedNearby > 0
+              ? '$reportedNearby unconfirmed late blight report(s) nearby, awaiting expert review.'
+              : 'No nearby cases reported in the last 30 days.',
+    };
+
+    final byClass = <String, Map<String, int>>{};
+    for (final row in areaRows) {
+      final bucket = byClass.putIfAbsent(
+        row.effectiveClass,
+        () => {'confirmed': 0, 'reported': 0},
+      );
+      bucket[row.isReviewed ? 'confirmed' : 'reported'] =
+          bucket[row.isReviewed ? 'confirmed' : 'reported']! + 1;
+    }
+    final rankedClasses = byClass.entries.toList()
+      ..sort((a, b) =>
+          (b.value['confirmed']! * 2 + b.value['reported']!)
+              .compareTo(a.value['confirmed']! * 2 + a.value['reported']!));
+    final dominant = rankedClasses.isEmpty ? null : rankedClasses.first.key;
+    final prevalent = {
+      'dominant_class': dominant,
+      'dominant_display': dominant == null ? null : displayName(dominant),
+      'total_confirmed': byClass.values
+          .fold<int>(0, (sum, row) => sum + row['confirmed']!),
+      'total_reported': byClass.values
+          .fold<int>(0, (sum, row) => sum + row['reported']!),
+      'by_class': byClass,
+      'radius_km': 15.0,
+      'window_days': 30,
+    };
+
+    final scoutingRank = level == 'high' ? 2 : (level == 'medium' ? 1 : 0);
+    final nearbyRank = nearbyLevel == 'none'
+        ? 0
+        : (nearbyLevel == 'low' ? 1 : 2);
+    final rank = math.max(scoutingRank, nearbyRank).toInt();
+    const urgency = ['calm', 'watch', 'act'];
+    final status = urgency[rank];
+    final primaryReason = nearbyRank >= scoutingRank && nearbyLevel != 'none'
+        ? 'nearby_outbreak'
+        : 'weather';
 
     // Only disease models justify "go and look at your plants today"; a pest
     // degree-day total is emergence timing, not a scouting trigger.
@@ -1162,19 +1303,20 @@ class LocalServer {
       risk: {'top_threat': risk['top_threat'], 'overall_level': level},
     );
 
+    final weather = risk['weather'] as Map<String, dynamic>;
     return {
       'status': status,
       'action': const {'act': 'take_photo', 'watch': 'watch', 'calm': 'none'}[status],
-      'time_hint': status == 'act'
-          ? 'Photograph your plants this morning, while dew is still on the leaf.'
+      'time_hint': status == 'act' &&
+              (primaryReason == 'nearby_outbreak' ||
+                  risk['top_threat'] == 'potato_late_blight' ||
+                  risk['top_threat'] == 'potato_early_blight')
+          ? 'this_morning'
           : null,
-      'primary_reason': status == 'act'
-          ? 'The weather is right for $display to start.'
-          : status == 'watch'
-              ? 'Conditions are turning favourable for $display.'
-              : 'No weather-driven disease pressure right now.',
-      'include_demo': false,
-      'data_thin': true,
+      'primary_reason': primaryReason,
+      'include_demo': includeDemo,
+      'data_thin': weather['synthetic'] == true ||
+          (weather['warnings'] as List).isNotEmpty,
       'offline': true,
       'location': risk['location'],
       'scouting': {
@@ -1184,17 +1326,29 @@ class LocalServer {
         'overall_score': risk['overall_score'],
         'focus_threat': risk['top_threat'],
         'focus_display': display,
+        'focus_kind': 'disease',
         'fired_models': fired,
       },
+      'nearby': nearby,
+      'prevalent': prevalent,
       'propagation': {
-        'level': 'unknown',
-        'summary': 'Nearby outbreak data needs a connection. This alert is '
-            'based on weather alone.',
-        'confirmed_count': 0,
+        'level': nearbyLevel,
+        'summary': nearby['summary'],
+        'confirmed_count': confirmedNearby.length,
+        'reported_count': reportedNearby,
         'offline': true,
       },
       'triage': triage.toJson(),
-      'weather': risk['weather'],
+      'weather': {
+        'temp_mean_c': weather['temp_mean_c'],
+        'humidity_mean': weather['humidity_mean'],
+        'synthetic': weather['synthetic'],
+        'source': weather['source'],
+      },
+      'risk_level': level,
+      'top_threat': risk['top_threat'],
+      'generated_at': DateTime.now().toUtc().toIso8601String(),
+      'geo_cell': (risk['location'] as Map<String, dynamic>)['geo_cell'],
     };
   }
 }

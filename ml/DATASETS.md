@@ -243,7 +243,7 @@ python ml/merge_field.py \
     --seed 42 --ratios 0.8 0.1 0.1
 ```
 
-**Highest-value work:** photograph 200–300 real potato leaves in Maharashtra
+**Highest-value work:** photograph 200–300 real potato leaves in India
 fields — healthy and diseased, different times of day — and annotate in
 Roboflow. A few hundred genuine field images are worth more than another ten
 thousand lab images. `ml/export_feedback.py` keeps that set growing from

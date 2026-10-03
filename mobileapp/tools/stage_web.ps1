@@ -1,4 +1,4 @@
-# Builds the CropGuard web UI and stages it into the Flutter app's assets, so
+# Builds the TerraSense AI web UI and stages it into the Flutter app's assets, so
 # the APK can serve it from 127.0.0.1 with no network.
 #
 #   pwsh mobileapp/tools/stage_web.ps1
@@ -16,7 +16,7 @@ $dest = Join-Path $repo 'mobileapp\app\assets\web'
 Write-Host "Building frontend..." -ForegroundColor Cyan
 Push-Location $frontend
 try {
-    & npm run build
+    & npm.cmd run build
     if ($LASTEXITCODE -ne 0) { throw "npm run build failed ($LASTEXITCODE)" }
 }
 finally { Pop-Location }

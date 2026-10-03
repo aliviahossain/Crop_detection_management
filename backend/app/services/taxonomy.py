@@ -3,7 +3,7 @@
 Scope decision: the trained model covers POTATO ONLY, with three classes.
 Potato is the right first crop for this PS -- late blight is the textbook
 weather-driven epidemic (the Smith Period is defined for it), it is a major
-Maharashtra rabi crop, and PlantVillage has clean potato imagery. Adding crops
+India rabi crop, and PlantVillage has clean potato imagery. Adding crops
 is a data + retrain job, not a code change: extend CLASSES and the KB.
 """
 from __future__ import annotations

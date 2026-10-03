@@ -1,4 +1,4 @@
-"""CropGuard Maharashtra -- FastAPI application entry point.
+"""TerraSense AI -- FastAPI application entry point.
 
 SIH 2026 PS26131: Crop Disease & Pest Detection System.
 
@@ -35,7 +35,7 @@ from app.routers import (
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(levelname)-8s %(name)s: %(message)s"
 )
-log = logging.getLogger("cropguard")
+log = logging.getLogger("terrasense_ai")
 
 DESCRIPTION = """
 Farmer- and extension-worker-facing crop health system for **potato**
@@ -67,7 +67,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="CropGuard Maharashtra",
+    title="TerraSense AI",
     description=DESCRIPTION,
     version="0.1.0",
     lifespan=lifespan,
@@ -93,7 +93,7 @@ app.mount("/media", StaticFiles(directory=str(settings.upload_dir)), name="media
 @app.get("/", tags=["meta"], summary="Service banner")
 def root() -> dict:
     return {
-        "service": "CropGuard Maharashtra",
+        "service": "TerraSense AI",
         "problem_statement": "SIH 2026 PS26131",
         "crop_scope": "potato (3 classes)",
         "docs": "/docs",

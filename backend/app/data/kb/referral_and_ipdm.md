@@ -8,7 +8,7 @@ severity: none
 sources:
   - FAO Integrated Pest Management principles
   - ICAR-NCIPM integrated pest and disease management guidance
-  - Maharashtra Department of Agriculture extension structure
+  - India Department of Agriculture extension structure
 review_status: needs_local_validation
 ---
 

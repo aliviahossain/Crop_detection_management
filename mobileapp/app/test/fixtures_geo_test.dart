@@ -9,8 +9,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cropguard/domain/geo.dart';
-import 'package:cropguard/domain/num_compat.dart';
+import 'package:terrasense_ai/domain/geo.dart';
+import 'package:terrasense_ai/domain/num_compat.dart';
 
 /// Same tolerance the Python comparator uses (fixture_lib.FLOAT_TOL).
 const double kFloatTol = 1e-6;

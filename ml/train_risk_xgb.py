@@ -3,7 +3,7 @@
 Read this before running it: **you need real historical outbreak data.** The
 brief is right that no ready-made dataset links weather + crop stage + variety +
 soil + local pest history to actual outbreak events for Indian crops. Until you
-have sourced that -- CROPSAP Maharashtra pest surveillance bulletins, ICAR/NCIPM
+have sourced that -- pest surveillance bulletins, ICAR/NCIPM
 records, or your own accumulated confirmed cases -- the deterministic agronomic
 models in the backend are the whole risk engine, and that is a defensible
 position, not a gap.
@@ -23,7 +23,7 @@ following two weeks, else 0. `rule_score` is what the agronomic models said at
 the time -- including it is what makes this layer a *correction* to the rules
 rather than a replacement for them.
 
-    python ml/train_risk_xgb.py --csv data/cropsap_potato.csv
+    python ml/train_risk_xgb.py --csv data/surveillance_potato.csv
 """
 from __future__ import annotations
 

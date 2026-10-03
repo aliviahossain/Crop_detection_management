@@ -335,7 +335,7 @@ const Map<String, PestModel> kPestModels = {
     baseTempC: 10.0,
     upperTempC: 35.0,
     degreeDaysPerGeneration: 360.0,
-    note: 'The major storage and field pest of potato in Maharashtra. Around '
+    note: 'The major storage and field pest of potato in India. Around '
         '360 degree-days above 10 C completes a generation; time pheromone-trap '
         'checks and any intervention to the emergence peak.',
   ),

@@ -1,5 +1,5 @@
-"""Multilingual advisory layer. Marathi is the priority language (Maharashtra),
-Hindi second, English the source.
+"""Multilingual advisory layer. Marathi, Hindi and English are supported,
+with English as the source.
 
 Design decision that matters: the advisory is **composed from structured
 message templates**, each of which exists in en/mr/hi. That means a farmer gets

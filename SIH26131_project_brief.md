@@ -1,5 +1,5 @@
 # SIH 2026 - PS26131: Crop Disease & Pest Detection System
-**Organization:** Government of Maharashtra (Maharashtra State Innovation Society, Dept. of Skills, Employment, Entrepreneurship and Innovation)
+**Organization:** Smart India Hackathon 2026
 **Category:** Software | **Theme:** Agriculture, FoodTech & Rural Development | **Idea submission deadline:** 20 September 2026 (confirm what's actually due at this stage - see Section 6)
 
 ---
@@ -29,12 +29,12 @@ The system should recommend integrated pest and disease management (IPDM) action
 | # | Required Component | What It Means | Suggested Tech | Priority |
 |---|---|---|---|---|
 | 1 | Image-based symptom identification | Photo → disease/pest class + confidence + bounding box | YOLOv8n/v11n, trained on PlantVillage + PlantDoc (field-condition images) | **MVP - must-have** |
-| 2 | Weather-based risk forecasting | Predict disease/pest risk *before* visible symptoms, using weather + crop stage + variety + soil + local pest history | Rule-based agronomic risk models (e.g. Smith Period for late blight, degree-day thresholds for pest emergence) as the primary logic, since no ready-made labeled dataset links weather+crop+soil to actual outbreak events for Indian crops. XGBoost + SHAP layered on top only where real historical data can reweight the thresholds (check CROPSAP Maharashtra pest surveillance bulletins for usable data). Weather API: OpenWeatherMap or Tomorrow.io (IMD has no practical public API for this) | **MVP - strong differentiator, but scope the model honestly (see Section 4)** |
+| 2 | Weather-based risk forecasting | Predict disease/pest risk *before* visible symptoms, using weather + crop stage + variety + soil + local pest history | Rule-based agronomic risk models (e.g. Smith Period for late blight, degree-day thresholds for pest emergence) as the primary logic, since no ready-made labeled dataset links weather+crop+soil to actual outbreak events for Indian crops. XGBoost + SHAP layered on top only where real historical data can reweight the thresholds (check pest surveillance bulletins for usable data). Weather API: OpenWeatherMap or Tomorrow.io (IMD has no practical public API for this) | **MVP - strong differentiator, but scope the model honestly (see Section 4)** |
 | 3 | IPDM recommendation engine | Given detected disease/pest + risk level, recommend treatment, dosage, safe pesticide use | RAG over agri-extension knowledge base (LangGraph + ChromaDB). Note: the knowledge base itself is real manual effort - sourcing accurate, safe treatment/dosage guidance per disease/pest class the model covers, not just a config step | **MVP - must-have, budget real effort for content sourcing** |
 | 4 | Pest-trap / sensor inputs | Ingest data from physical traps/sensors as an additional signal | FastAPI ingestion endpoint, simple schema (device_id, reading, timestamp, geo) | Can start as a mocked/simulated feed, wire to real hardware later |
 | 5 | Geospatial hotspot mapping | Visualize disease/pest clusters across a region | React + Leaflet/Mapbox, aggregate confirmed cases by geo-cell | Core differentiator |
 | 6 | Expert validation workflow | Human (extension officer) confirms/corrects AI diagnosis | Review queue UI, simple approve/reject/correct actions, feeds back into training data | Core |
-| 7 | Multilingual advisories | Output guidance in regional languages (Marathi priority, given Maharashtra) | Translation API or LLM-based localization layer | High judge/user appeal, moderate effort |
+| 7 | Multilingual advisories | Output guidance in regional languages (Marathi included among supported regional languages) | Translation API or LLM-based localization layer | High judge/user appeal, moderate effort |
 | 8 | Safe input usage + referral logic | Flag when case should escalate to lab/expert instead of self-treatment (e.g. low confidence, unusual pattern) | Rule-based triage on top of model confidence + risk score | **Must-have** (ties diagnosis to safety) |
 | 9 | Follow-up monitoring | Track whether recommended treatment worked over time | DB table: case_id, status, follow_up_date, outcome | Core |
 | 10 | Learns from field confirmations | Model improves using expert-corrected labels | Feedback loop: log corrections → periodic retraining job | Longer-term, depends on volume of confirmed field data |
@@ -94,7 +94,7 @@ The system should recommend integrated pest and disease management (IPDM) action
 **Risk model - realistic scoping:**
 - There is no ready-made labeled dataset linking weather + crop stage + variety + soil + local pest history to actual disease outbreaks for Indian crops, so "just train XGBoost on it" is not viable as the primary approach.
 - **Primary layer:** established agronomic risk models - e.g. the Smith Period for potato/tomato late blight (based on temperature + relative humidity thresholds over consecutive days), degree-day accumulation models for pest emergence timing. These are published, validated formulas that can run as deterministic rules today.
-- **Secondary layer:** XGBoost + SHAP to reweight or adjust those rule-based thresholds using whatever real historical data can be sourced (check CROPSAP Maharashtra pest surveillance bulletins, ICAR/NCIPM data) - this is additive refinement, not the foundation.
+- **Secondary layer:** XGBoost + SHAP to reweight or adjust those rule-based thresholds using whatever real historical data can be sourced (check pest surveillance bulletins, ICAR/NCIPM data) - this is additive refinement, not the foundation.
 - Features for the secondary layer, once data is available: temperature, humidity, rainfall (recent + forecast), crop stage, variety, soil condition, local historical pest incidence
 - Weather API: OpenWeatherMap or Tomorrow.io - not IMD, which has no practical public API for rapid integration
 
@@ -107,7 +107,7 @@ The system should recommend integrated pest and disease management (IPDM) action
 3. RAG/advisory layer - build the IPDM knowledge base (sourcing accurate, safe treatment/dosage guidance per disease/pest class - this is real content work, not just a config step), wire into LangGraph
 4. Frontend - farmer flow (upload → detect → advisory) first, officer dashboard second
 5. Geospatial map + multilingual layer
-6. XGBoost secondary risk layer, once real historical pest/outbreak data has been sourced (CROPSAP/NCIPM) - treat this as a later refinement, not a blocker for the core loop
+6. XGBoost secondary risk layer, once real historical pest/outbreak data has been sourced (public surveillance/NCIPM) - treat this as a later refinement, not a blocker for the core loop
 7. Integration testing, pitch material tying every feature back to the "expected outcomes" line (earlier detection, reduced crop loss, targeted pesticide use, faster extension response)
 
 ---

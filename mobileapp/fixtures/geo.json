@@ -5,7 +5,7 @@
   "cases": [
     {
       "id": "pune_default_cell",
-      "why": "A real Maharashtra coordinate at the default 0.05 deg grid.",
+      "why": "A real geographic coordinate at the default 0.05 deg grid.",
       "fn": "geo_cell",
       "input": {
         "lat": 18.5204,

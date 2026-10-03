@@ -14,15 +14,15 @@ import httpx
 
 from app.config import settings
 
-log = logging.getLogger("cropguard.chat")
+log = logging.getLogger("terrasense_ai.chat")
 
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
 # Keep the model on topic and grounded in what this app actually does.
 SYSTEM_PROMPT = (
-    "You are CropGuard's assistant, a friendly helper inside a potato crop "
+    "You are TerraSense AI's assistant, a friendly helper inside a potato crop "
     "disease-detection app used by farmers and agriculture officers in "
-    "Maharashtra, India. The app can: diagnose potato disease from a leaf photo "
+    "India. The app can: diagnose potato disease from a leaf photo "
     "(early blight, late blight, healthy), run a live camera scan, forecast "
     "weather-driven disease risk, show a hotspot map, and route uncertain cases "
     "to an expert review queue. Answer questions about potato diseases, safe "

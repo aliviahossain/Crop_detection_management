@@ -11,8 +11,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cropguard/domain/risk_models.dart';
-import 'package:cropguard/domain/weather.dart';
+import 'package:terrasense_ai/domain/risk_models.dart';
+import 'package:terrasense_ai/domain/weather.dart';
 
 const double kFloatTol = 1e-6;
 

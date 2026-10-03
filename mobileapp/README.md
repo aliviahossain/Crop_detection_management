@@ -1,6 +1,6 @@
-# CropGuard Mobile — offline-first Android app
+# TerraSense AI Mobile — offline-first Android app
 
-Flutter farmer app for CropGuard. The farmer's whole loop — forecast, scan,
+Flutter farmer app for TerraSense AI. The farmer's whole loop — forecast, scan,
 diagnose, advise, follow up — runs **with the radio off**. Collective
 intelligence (cross-farm outbreak pressure) and expert verification are
 eventually consistent, with staleness shown rather than hidden.
@@ -218,7 +218,7 @@ python mobileapp/tools/export_demo_dataset.py --check   # CI guard
 ```
 
 Writes `app/assets/demo/dataset.json` (~290 KB): 120 cases, 120 follow-ups and
-520 trap readings across the Maharashtra potato districts. The app derives the
+520 trap readings across the potato-growing districts in India. The app derives the
 dashboard, the hotspot cells, the review queue and the follow-up statistics from
 those rows, so the period selector and the district filter genuinely filter
 rather than moving four fixed numbers.

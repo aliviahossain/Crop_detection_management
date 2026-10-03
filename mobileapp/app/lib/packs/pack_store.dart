@@ -303,7 +303,7 @@ class PackStore {
     }
     if (compareVersions(manifest.minAppVersion, kAppVersion) > 0) {
       throw PackException(
-        '${manifest.crop} ${manifest.version} needs CropGuard '
+        '${manifest.crop} ${manifest.version} needs TerraSense AI '
         '${manifest.minAppVersion} or newer. Update the app first.',
       );
     }

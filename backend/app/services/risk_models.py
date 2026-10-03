@@ -284,7 +284,7 @@ PEST_MODELS: dict[str, PestModel] = {
         upper_temp_c=35.0,
         degree_days_per_generation=360.0,
         note=(
-            "The major storage and field pest of potato in Maharashtra. Around 360 "
+            "The major storage and field pest of potato in India. Around 360 "
             "degree-days above 10 C completes a generation; time pheromone-trap checks "
             "and any intervention to the emergence peak."
         ),

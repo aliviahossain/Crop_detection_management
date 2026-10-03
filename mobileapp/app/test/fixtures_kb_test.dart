@@ -12,7 +12,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cropguard/kb/knowledge_base.dart';
+import 'package:terrasense_ai/kb/knowledge_base.dart';
 
 /// Same tolerance the Python comparator uses (fixture_lib.FLOAT_TOL).
 const double kFloatTol = 1e-6;

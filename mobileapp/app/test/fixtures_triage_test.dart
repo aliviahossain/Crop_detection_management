@@ -12,7 +12,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cropguard/domain/triage.dart';
+import 'package:terrasense_ai/domain/triage.dart';
 
 /// Prose keys are warnings, not failures, in the Python comparator - the same
 /// rule applies here so improving a farmer-facing message cannot break CI.

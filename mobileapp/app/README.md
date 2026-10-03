@@ -1,6 +1,6 @@
-# CropGuard — Flutter app
+# TerraSense AI — Flutter app
 
-The Android app for farmers. It hosts the CropGuard React UI in a WebView and
+The Android app for farmers. It hosts the TerraSense AI React UI in a WebView and
 answers its API calls from an on-device Dart server, so the farmer loop runs
 offline.
 

@@ -1,6 +1,6 @@
-// CropGuard Android app - fully offline.
+// TerraSense AI Android app - fully offline.
 //
-// The UI is the CropGuard web app, bundled into the APK. The backend it talks
+// The UI is the TerraSense AI web app, bundled into the APK. The backend it talks
 // to is `LocalServer`, running on 127.0.0.1 inside this process, implementing
 // the agronomic models, the triage safety gate and the taxonomy in Dart. There
 // is no network call anywhere in the farmer's path: install it, turn on
@@ -23,16 +23,16 @@ import 'packs/pack_store.dart';
 // until it starts.
 const Duration kColdStartHint = Duration(seconds: 8);
 
-void main() => runApp(const CropGuardApp());
+void main() => runApp(const TerraSenseApp());
 
-class CropGuardApp extends StatelessWidget {
-  const CropGuardApp({super.key});
+class TerraSenseApp extends StatelessWidget {
+  const TerraSenseApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    const seed = Color(0xFF1F6B45); // CropGuard green, matches the web header
+    const seed = Color(0xFF1F6B45); // TerraSense AI green, matches the web header
     return MaterialApp(
-      title: 'CropGuard',
+      title: 'TerraSense AI',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: seed),
@@ -75,13 +75,13 @@ class _WebShellState extends State<WebShell> {
   Future<void> _boot() async {
     try {
       final origin = await LocalServer.instance.start();
-      debugPrint('[cropguard] on-device server listening at $origin');
+      debugPrint('[terrasense] on-device server listening at $origin');
 
       // Ask which crop before loading the UI, not after: the scanner reads
       // /detect/status once at startup, so a pack installed later would leave
       // the page convinced there is no detector until a manual reload.
       final pack = await PackStore.instance.activePack();
-      debugPrint('[cropguard] active pack: '
+      debugPrint('[terrasense] active pack: '
           '${pack == null ? 'none' : '${pack.crop}@${pack.version}'}');
       if (!mounted) return;
       if (pack == null) {
@@ -102,7 +102,7 @@ class _WebShellState extends State<WebShell> {
     } catch (e, st) {
       // Without this the only symptom is a generic error pane, which tells
       // nobody anything. adb logcat is the one place this can surface.
-      debugPrint('[cropguard] server failed to start: $e\n$st');
+      debugPrint('[terrasense] server failed to start: $e\n$st');
       if (mounted) {
         setState(() {
           _loading = false;
@@ -145,7 +145,7 @@ class _WebShellState extends State<WebShell> {
             if (mounted) setState(() => _loading = false);
           },
           onWebResourceError: (err) {
-            debugPrint('[cropguard] webview error: ${err.errorCode} '
+            debugPrint('[terrasense] webview error: ${err.errorCode} '
                 '${err.errorType} mainFrame=${err.isForMainFrame} '
                 'url=${err.url} :: ${err.description}');
             // Subframe and asset errors are noisy and mostly harmless; only a
@@ -167,7 +167,7 @@ class _WebShellState extends State<WebShell> {
     // loaded fine, and the only way to tell a blank page from a crashed one is
     // to guess. `adb logcat -s flutter` now shows the actual stack.
     c.setOnConsoleMessage((msg) {
-      debugPrint('[cropguard][web] ${msg.level.name}: ${msg.message}');
+      debugPrint('[terrasense][web] ${msg.level.name}: ${msg.message}');
     });
 
     // Android specifics: grant the WebView's camera request (the scanner), and
@@ -229,7 +229,7 @@ class _WebShellState extends State<WebShell> {
     } catch (e) {
       // A picker that throws must still return, or the WebView leaves the
       // input in a pending state and the next tap does nothing either.
-      debugPrint('[cropguard] file selector failed: $e');
+      debugPrint('[terrasense] file selector failed: $e');
       return const [];
     }
   }
@@ -317,14 +317,24 @@ class _LoadingPane extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Image.asset('assets/terrasense-mark.png', width: 104, height: 104),
+          const SizedBox(height: 20),
           const CircularProgressIndicator(),
-          const SizedBox(height: 28),
+          const SizedBox(height: 20),
           Text(
-            'CropGuard',
+            'TerraSense AI',
             style: Theme.of(context)
                 .textTheme
                 .headlineSmall
                 ?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Smart Agriculture',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
           ),
           const SizedBox(height: 10),
           AnimatedOpacity(
@@ -363,7 +373,7 @@ class _ErrorPane extends StatelessWidget {
               size: 48, color: Theme.of(context).colorScheme.outline),
           const SizedBox(height: 20),
           Text(
-            'CropGuard could not start',
+            'TerraSense AI could not start',
             style: Theme.of(context)
                 .textTheme
                 .titleLarge
