@@ -276,7 +276,7 @@ Stating these is part of the design, not an omission.
 - Built to solve the Smart India Hackathon **Problem Statement 26131**.
 - Leverages the **PlantVillage** and **PlantDoc** image datasets.
 - Relies on proven agronomic formulas — the **Smith Period**, **Beaumont Period**, **TOMCAST**, and **degree-day** models.
-- Full project report (PDF): [project site](https://aliviahossain.github.io/Crop_detection_management/report/).
+- Full project report (PDF): [TerraSense AI project report (PDF)](TerraSense_AI_Project_Report.pdf).
 - Full capability-to-code mapping: [`docs/PS_TRACEABILITY.md`](docs/PS_TRACEABILITY.md) · system map: [`ARCHITECTURE.md`](ARCHITECTURE.md) · mobile app: [`mobileapp/mobileapp.md`](mobileapp/mobileapp.md) · architecture rationale: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · ML pipeline: [`ml/README.md`](ml/README.md) · dataset provenance: [`ml/DATASETS.md`](ml/DATASETS.md).
 
 ---

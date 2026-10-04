@@ -13,7 +13,9 @@
 
 **Repository:** https://github.com/aliviahossain/Crop_detection_management
 **Deployed application (web):** https://cropguard-frontend-rhzv.onrender.com/
-**Android app, crop packs and project report:** https://aliviahossain.github.io/Crop_detection_management/
+**Android app and crop packs:** https://aliviahossain.github.io/Crop_detection_management/
+
+**Project report (PDF):** [TerraSense_AI_Project_Report.pdf](TerraSense_AI_Project_Report.pdf)
 
 ---
 
@@ -834,4 +836,4 @@ version of this document lives in [`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md). 
 is [`ARCHITECTURE.md`](ARCHITECTURE.md), the design rationale is
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), and the mobile app's implementation reference
 is [`mobileapp/mobileapp.md`](mobileapp/mobileapp.md). The full project report (PDF) is on
-the [project site](https://aliviahossain.github.io/Crop_detection_management/report/).
+the [TerraSense AI project report (PDF)](TerraSense_AI_Project_Report.pdf).
