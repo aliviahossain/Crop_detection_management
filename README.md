@@ -15,8 +15,6 @@
 **Deployed application (web):** https://cropguard-frontend-rhzv.onrender.com/
 **Android app and crop packs:** https://aliviahossain.github.io/Crop_detection_management/
 
-**Project report (PDF):** [TerraSense_AI_Project_Report.pdf](TerraSense_AI_Project_Report.pdf)
-
 ---
 
 TerraSense AI is a proactive, offline-capable crop-health platform for farmers and agricultural
@@ -835,5 +833,4 @@ official "Expected Solution" text mapped to the code that implements it. A longe
 version of this document lives in [`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md). The system map
 is [`ARCHITECTURE.md`](ARCHITECTURE.md), the design rationale is
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), and the mobile app's implementation reference
-is [`mobileapp/mobileapp.md`](mobileapp/mobileapp.md). The full project report (PDF) is on
-the [TerraSense AI project report (PDF)](TerraSense_AI_Project_Report.pdf).
+is [`mobileapp/mobileapp.md`](mobileapp/mobileapp.md).
