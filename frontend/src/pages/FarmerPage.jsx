@@ -36,6 +36,13 @@ function DetectionPreview({ src, detections }) {
   )
 }
 
+const DEMO_IMAGES = [
+  'crop_health.jpeg',
+  'crop_health2.jpg',
+  'crop_health3.jpg',
+  'crop_health4.png',
+]
+
 export default function FarmerPage() {
   const t = useT()
   const { lang } = useLang()
@@ -45,6 +52,7 @@ export default function FarmerPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
+  const [demoLoading, setDemoLoading] = useState(false)
 
   // Live camera capture (phone connected as a camera, or the laptop webcam).
   const { devices, refresh: refreshDevices } = useVideoDevices()
@@ -59,6 +67,28 @@ export default function FarmerPage() {
     if (videoRef.current) videoRef.current.srcObject = null
     setCameraOn(false)
   }, [])
+
+  const loadDemo = useCallback(
+    async (filename = 'crop_health.jpeg') => {
+      stopCamera()
+      setError(null)
+      setResult(null)
+      setDemoLoading(true)
+      try {
+        const res = await fetch(`/demo/${filename}`)
+        if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to load demo image`)
+        const blob = await res.blob()
+        const demoFile = new File([blob], filename, { type: blob.type || 'image/jpeg' })
+        setFile(demoFile)
+        setPreviewUrl(URL.createObjectURL(demoFile))
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setDemoLoading(false)
+      }
+    },
+    [stopCamera],
+  )
 
   const startCamera = useCallback(async () => {
     setError(null)
@@ -160,7 +190,8 @@ export default function FarmerPage() {
       <p className="lede">{t('farmer.help')}</p>
 
       <div className="grid two">
-        <form className="card stack" onSubmit={submit}>
+        <div className="stack">
+          <form className="card stack" onSubmit={submit}>
           {cameraOn ? (
             <div className="stack">
               <video
@@ -233,6 +264,75 @@ export default function FarmerPage() {
 
           {error && <div className="alert danger">{error}</div>}
         </form>
+
+        <div className="card" style={{ padding: '12px 14px' }}>
+          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink)', marginBottom: 10 }}>
+            Test on untrained test images:
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {DEMO_IMAGES.map((filename) => {
+              const active = file?.name === filename
+              return (
+                <div
+                  key={filename}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => loadDemo(filename)}
+                  onKeyDown={(e) => e.key === 'Enter' && loadDemo(filename)}
+                  style={{
+                    display: 'inline-flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 6,
+                    cursor: 'pointer',
+                    padding: 8,
+                    borderRadius: 'var(--radius)',
+                    border: active ? '1.5px solid var(--accent)' : '1.5px solid var(--line)',
+                    background: active ? 'rgba(47,107,73,0.06)' : 'var(--bg)',
+                    boxShadow: active ? '0 0 0 2px rgba(47,107,73,0.15)' : 'none',
+                    transition: 'border-color 0.15s, box-shadow 0.15s',
+                  }}
+                  title={`Click to load ${filename}`}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--accent)'
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(47,107,73,0.15)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = active ? 'var(--accent)' : 'var(--line)'
+                    e.currentTarget.style.boxShadow = active ? '0 0 0 2px rgba(47,107,73,0.15)' : 'none'
+                  }}
+                >
+                  <img
+                    src={`/demo/${filename}`}
+                    alt={filename}
+                    style={{
+                      width: 80,
+                      height: 80,
+                      objectFit: 'cover',
+                      borderRadius: 6,
+                      pointerEvents: 'none',
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: active ? 'var(--accent)' : 'var(--muted)',
+                      fontWeight: active ? 600 : 500,
+                      maxWidth: 90,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {filename}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
 
         <div className="stack">
           {!result && <div className="card muted">{t('farmer.waiting')}</div>}

@@ -5,7 +5,7 @@ __pycache__/
 venv/
 *.egg-info/
 .pytest_cache/
-*.mp4
+
 
 
 # Env / secrets
@@ -55,7 +55,6 @@ frontend/public/ort/
 # videos, run outputs, or weights. Small tracked artifacts are the notebooks,
 # utils.py, the data yaml, the train/val split lists, and RESULTS.md.
 frames/
-*.mp4
 # runs/, *.pt, *.onnx and .venv/ are already ignored above (covers
 # croprow/.venv/ and any exported croprow weights). Allow tracked weights
 # that are deliberately dropped into croprow/models/:
