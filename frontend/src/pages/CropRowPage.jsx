@@ -15,6 +15,13 @@ import { useVideoDevices } from '../lib/useVideoDevices.js'
 const TARGET_FPS = 8
 const BOX_COLOR = '#4ade80' // one class, one colour
 
+const DEMO_VIDEOS = [
+  'crop_row_scan.mp4',
+  'crop_row_scan2.mp4',
+  'crop_row_scan3.mp4',
+  'crop_row_scan4.mp4',
+]
+
 export default function CropRowPage() {
   const t = useT()
   const navigate = useNavigate()
@@ -34,6 +41,8 @@ export default function CropRowPage() {
   const [deviceId, setDeviceId] = useState('') // '' = auto (rear camera on a phone)
   const [fileName, setFileName] = useState(null)
   const [uploadUrl, setUploadUrl] = useState(null) // object URL of the chosen clip
+  const [isDemo, setIsDemo] = useState(false)
+  const [demoLoading, setDemoLoading] = useState(false)
   const [mode, setMode] = useState(null)
   const [modeNote, setModeNote] = useState(null)
   const [count, setCount] = useState(0)
@@ -96,6 +105,7 @@ export default function CropRowPage() {
     setSource('idle')
     setUploadUrl(null)
     setFileName(null)
+    setIsDemo(false)
     setCount(0)
     setTotal(0)
     setPeak(0)
@@ -106,6 +116,7 @@ export default function CropRowPage() {
   // --------------------------------------------------------------- live cam
   const startCamera = useCallback(async () => {
     stopEverything()
+    setIsDemo(false)
     setCameraError(null)
     setError(null)
     setCameraState('starting')
@@ -138,12 +149,20 @@ export default function CropRowPage() {
     (e) => {
       const file = e.target.files?.[0]
       if (!file) return
-      stopEverything()
+      stopLoop()
+      releaseObjectUrl()
+      const canvas = overlayRef.current
+      canvas?.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height)
+      trackerRef.current.reset()
+      setTotal(0)
+      setCount(0)
+      setPeak(0)
+      setTopConf(null)
+      setStats({ fps: 0, inferenceMs: 0 })
       setError(null)
-      // Clear any live stream, then let React set src from state. A muted
-      // <video src> with autoPlay is the pattern that reliably auto-starts; the
-      // onLoadedData handler below plays it explicitly as a belt-and-braces.
-      if (videoRef.current) videoRef.current.srcObject = null
+      setIsDemo(false)
+      setCameraState('idle')
+
       const url = URL.createObjectURL(file)
       objectUrlRef.current = url
       setFileName(file.name)
@@ -151,7 +170,44 @@ export default function CropRowPage() {
       setSource('upload')
       e.target.value = '' // allow the same file to be picked again
     },
-    [stopEverything],
+    [releaseObjectUrl, stopLoop],
+  )
+
+  const loadDemo = useCallback(
+    (filename = 'crop_row_scan.mp4') => {
+      const nextUrl = `/demo/${filename}`
+      if (uploadUrl === nextUrl && videoRef.current) {
+        trackerRef.current.reset()
+        setTotal(0)
+        setCount(0)
+        setPeak(0)
+        setTopConf(null)
+        setStats({ fps: 0, inferenceMs: 0 })
+        const canvas = overlayRef.current
+        canvas?.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height)
+        videoRef.current.currentTime = 0
+        videoRef.current.play().catch(() => {})
+        return
+      }
+
+      stopLoop()
+      releaseObjectUrl()
+      const canvas = overlayRef.current
+      canvas?.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height)
+      trackerRef.current.reset()
+      setTotal(0)
+      setCount(0)
+      setPeak(0)
+      setTopConf(null)
+      setStats({ fps: 0, inferenceMs: 0 })
+      setError(null)
+      setCameraState('idle')
+      setFileName(filename)
+      setUploadUrl(nextUrl)
+      setSource('upload')
+      setIsDemo(true)
+    },
+    [releaseObjectUrl, stopLoop, uploadUrl],
   )
 
   // --------------------------------------------------------------- loop
@@ -173,6 +229,8 @@ export default function CropRowPage() {
         const height = video.videoHeight
         const result = await detector.detect(video, width, height)
         const { total: uniqueTotal } = trackerRef.current.update(result.detections)
+        // Clear any previous transient network error once frames are processing
+        setError(null)
         setCount(result.detections.length)
         setTotal(uniqueTotal)
         setPeak((p) => Math.max(p, result.detections.length))
@@ -196,7 +254,7 @@ export default function CropRowPage() {
     loopRef.current = setInterval(tick, 1000 / TARGET_FPS)
     return () => clearInterval(loopRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source, cameraState, mode])
+  }, [source, cameraState, mode, uploadUrl])
 
   const drawOverlay = (dets, width, height) => {
     const canvas = overlayRef.current
@@ -278,9 +336,11 @@ export default function CropRowPage() {
       />
 
       <div className="grid two">
-        <div className="card">
+        <div className="stack">
+          <div className="card">
           <div className="scan-frame">
             <video
+              key={uploadUrl || 'idle'}
               ref={videoRef}
               playsInline
               muted
@@ -392,6 +452,100 @@ export default function CropRowPage() {
             </p>
           )}
         </div>
+
+        <div className="card" style={{ padding: '12px 14px' }}>
+          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink)', marginBottom: 10 }}>
+            Test on untrained test videos:
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {DEMO_VIDEOS.map((vid) => {
+              const active = fileName === vid
+              return (
+                <div
+                  key={vid}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => loadDemo(vid)}
+                  onKeyDown={(e) => e.key === 'Enter' && loadDemo(vid)}
+                  style={{
+                    display: 'inline-flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 6,
+                    cursor: 'pointer',
+                    padding: 8,
+                    borderRadius: 'var(--radius)',
+                    border: active ? '1.5px solid var(--accent)' : '1.5px solid var(--line)',
+                    background: active ? 'rgba(47,107,73,0.06)' : 'var(--bg)',
+                    boxShadow: active ? '0 0 0 2px rgba(47,107,73,0.15)' : 'none',
+                    transition: 'border-color 0.15s, box-shadow 0.15s',
+                  }}
+                  title={`Click to load ${vid}`}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--accent)'
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(47,107,73,0.15)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = active ? 'var(--accent)' : 'var(--line)'
+                    e.currentTarget.style.boxShadow = active ? '0 0 0 2px rgba(47,107,73,0.15)' : 'none'
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'relative',
+                      width: 80,
+                      height: 80,
+                      borderRadius: 6,
+                      overflow: 'hidden',
+                      background: '#000',
+                    }}
+                  >
+                    <video
+                      src={`/demo/${vid}#t=0.1`}
+                      preload="metadata"
+                      muted
+                      playsInline
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        pointerEvents: 'none',
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <span style={{ fontSize: 20, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
+                        ▶
+                      </span>
+                    </div>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: active ? 'var(--accent)' : 'var(--muted)',
+                      fontWeight: active ? 600 : 500,
+                      maxWidth: 100,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {vid}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
 
         <div className="stack">
           <div className="card stack">

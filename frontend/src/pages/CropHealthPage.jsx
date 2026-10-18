@@ -45,6 +45,8 @@ export default function CropHealthPage() {
   const [deviceId, setDeviceId] = useState('') // '' = auto (rear camera on a phone)
   const [fileName, setFileName] = useState(null)
   const [uploadUrl, setUploadUrl] = useState(null) // object URL of the chosen clip
+  const [isDemo, setIsDemo] = useState(false)
+  const [demoLoading, setDemoLoading] = useState(false)
   const [mode, setMode] = useState(null)
   const [modeNote, setModeNote] = useState(null)
   const [mismatch, setMismatch] = useState(false)
@@ -122,6 +124,7 @@ export default function CropHealthPage() {
     setSource('idle')
     setUploadUrl(null)
     setFileName(null)
+    setIsDemo(false)
     setFrameCounts({})
     setTotals({})
     setTotal(0)
@@ -132,6 +135,7 @@ export default function CropHealthPage() {
   // --------------------------------------------------------------- live cam
   const startCamera = useCallback(async () => {
     stopEverything()
+    setIsDemo(false)
     setCameraError(null)
     setError(null)
     setCameraState('starting')
@@ -166,6 +170,7 @@ export default function CropHealthPage() {
       if (!file) return
       stopEverything()
       setError(null)
+      setIsDemo(false)
       // Clear any live stream, then let React set src from state. A muted
       // <video src> with autoPlay is the pattern that reliably auto-starts; the
       // onLoadedData handler below plays it explicitly as a belt-and-braces.
@@ -179,6 +184,16 @@ export default function CropHealthPage() {
     },
     [stopEverything],
   )
+
+  const loadDemo = useCallback(() => {
+    stopEverything()
+    setError(null)
+    if (videoRef.current) videoRef.current.srcObject = null
+    setFileName('crop_health.mp4')
+    setUploadUrl('/demo/crop_health.mp4')
+    setSource('upload')
+    setIsDemo(true)
+  }, [stopEverything])
 
   // --------------------------------------------------------------- loop
   useEffect(() => {
@@ -199,6 +214,9 @@ export default function CropHealthPage() {
         const height = video.videoHeight
         const result = await detector.detect(video, width, height)
         const tracked = trackerRef.current.update(result.detections)
+
+        // Clear any previous transient network error once frames are processing
+        setError(null)
 
         const perFrame = {}
         for (const d of result.detections) {
@@ -319,7 +337,8 @@ export default function CropHealthPage() {
       />
 
       <div className="grid two">
-        <div className="card">
+        <div className="stack">
+          <div className="card">
           <div className="scan-frame">
             <video
               ref={videoRef}
@@ -437,6 +456,50 @@ export default function CropHealthPage() {
             </p>
           )}
         </div>
+
+        <div className="card" style={{ padding: '12px 14px' }}>
+          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink)', marginBottom: 10 }}>
+            Test on untrained test video:
+          </div>
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={loadDemo}
+            onKeyDown={(e) => e.key === 'Enter' && loadDemo()}
+            style={{
+              display: 'inline-flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 6,
+              cursor: 'pointer',
+              padding: 8,
+              borderRadius: 'var(--radius)',
+              border: '1.5px solid var(--line)',
+              background: 'var(--bg)',
+              transition: 'border-color 0.15s, box-shadow 0.15s',
+            }}
+            title="Click to load crop_health.mp4"
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(47,107,73,0.15)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.style.boxShadow = 'none'; }}
+          >
+            <div style={{ position: 'relative', width: 80, height: 80, borderRadius: 6, overflow: 'hidden', background: '#000' }}>
+              <video
+                src="/demo/crop_health.mp4#t=0.1"
+                preload="metadata"
+                muted
+                playsInline
+                style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }}
+              />
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: 20, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>▶</span>
+              </div>
+            </div>
+            <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'center' }}>
+              crop_health.mp4
+            </span>
+          </div>
+        </div>
+      </div>
 
         <div className="stack">
           <div className="card stack">
